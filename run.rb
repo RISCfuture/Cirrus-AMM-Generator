@@ -48,12 +48,12 @@ class Book
   # @return [Array<Pathname>] An ordered array of all the PDFs to merge.
 
   def paths
-    chapters.inject(Array.new) do |array, chapter|
+    chapters.each_with_object(Array.new) do |chapter, array|
       chapter.sections.each do |s|
         raise "PDFs not yet downloaded" unless s.downloaded?
+
         array << s.path
       end
-      array
     end
   end
 
@@ -61,12 +61,12 @@ class Book
   #   files to merge.
 
   def ps_paths
-    chapters.inject(Array.new) do |array, chapter|
+    chapters.each_with_object(Array.new) do |chapter, array|
       chapter.sections.each do |s|
         raise "PDFs not yet downloaded" unless s.downloaded?
+
         array << s.ps_path
       end
-      array
     end
   end
 
@@ -138,6 +138,7 @@ class Book
     def previous
       index = @book.chapters.index(self)
       return nil if index.zero?
+
       @book.chapters[index - 1]
     end
   end
@@ -189,6 +190,7 @@ class Book
         req = Net::HTTP::Get.new(url.path)
         http.request(req) do |res|
           raise("Couldn't download #{inspect}") unless res.kind_of?(Net::HTTPOK)
+
           FileUtils.mkdir_p(path.dirname)
           path.open('wb') do |f|
             res.read_body { |chunk| f.write chunk }
@@ -227,6 +229,7 @@ class Book
 
     def pages
       raise "Not yet downloaded: #{inspect}" unless downloaded?
+
       @pages ||= begin
         info = `pdfinfo #{Shellwords.escape path.to_s}`
         info.match(/^Pages:\s+(\d+)$/)[1].to_i
@@ -243,6 +246,7 @@ class Book
     def previous
       index = @chapter.sections.index(self)
       return nil if index.zero?
+
       @chapter.sections[index - 1]
     end
   end
@@ -251,7 +255,7 @@ end
 def build_toc
   return YAML.load_file(BOOK_PATH.to_s) if BOOK_PATH.exist?
 
-  html  = Nokogiri::HTML(open(TOC_URL))
+  html  = Nokogiri::HTML(TOC_URL.open)
   title = strip(html.css('p>b').first.content)
   book  = Book.new(title)
 
@@ -294,6 +298,7 @@ def download_pdfs(book)
   book.chapters.each do |chapter|
     chapter.sections.each do |section|
       next if section.downloaded?
+
       puts "Downloading #{section.title}..."
       section.download!
     end
@@ -302,6 +307,7 @@ end
 
 def generate_pdfmarks(book)
   return if MARKS_PATH.exist?
+
   MARKS_PATH.open('w') do |f|
     f.puts <<~EOS.chomp
       [ /Title (#{book.title})
@@ -322,6 +328,7 @@ def convert_to_ps(book)
   book.chapters.each do |chapter|
     chapter.sections.each do |section|
       next if section.converted?
+
       puts "Converting #{section.title}..."
       section.convert!
     end
@@ -333,7 +340,7 @@ def combine_pdfs(book)
          '-dBATCH',
          '-sDEVICE=pdfwrite',
          '-o', OUT_PATH.to_s,
-         *(book.ps_paths.map(&:to_s)),
+         *book.ps_paths.map(&:to_s),
          MARKS_PATH.to_s
 end
 
