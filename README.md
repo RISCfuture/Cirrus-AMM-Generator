@@ -6,7 +6,8 @@ table of contents using bookmark metadata.
 
 This script performs the following steps idempotently:
 
-1. Downloads the list of URLs from the [Cirrus web site](http://servicecenters.cirrusdesign.com/tech_pubs/SR2X/pdf/AMM/SR22/html/ammtoc.html)
+1. Downloads the list of URLs from a maintenance  manual on the
+   [Cirrus Service Centers web site](http://servicecenters.cirrusdesign.com/)
 2. Downloads each PDF
 3. Converts each PDF to PostScript (thus removing PDF metadata)
 4. Generates table-of-contents bookmark metadata
@@ -17,14 +18,14 @@ any one step, it can be re-run without performing already-completed work again.
 
 ## Requirements
 
-This script requires at least Ruby 2.0 (2.5.1 targeted) and the Bundler gem.
-You must also have the following binaries in your `$PATH`:
+This script requires at least Ruby 2.0 and the Bundler gem. You must also have
+the following binaries in your `$PATH`:
 
 * `gs` (from Ghostscript)
 * `pdftops`, `pdfinfo` (from Poppler)
 
-If you are using Homebrew, you can install
-these dependencies by running `brew bundle`.
+If you are using Homebrew, you can install these dependencies by running
+`brew bundle`.
 
 ## How to Run
 
@@ -43,4 +44,4 @@ Make sure you have one of the following at the ready to help pass the time:
 ## Documentation
 
 Generate HTML documentation by running `yard` on the command line. Generated
-documentation is saved inthe `doc` directory.
+documentation is saved in the `doc` directory.
