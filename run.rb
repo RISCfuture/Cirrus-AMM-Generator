@@ -2,6 +2,7 @@
 
 require 'fileutils'
 require 'open-uri'
+require 'net/http'
 require 'pathname'
 require 'shellwords'
 require 'uri'
@@ -231,9 +232,11 @@ class Book
       raise "Not yet downloaded: #{inspect}" unless downloaded?
 
       @pages ||= begin
-        info = `pdfinfo #{Shellwords.escape path.to_s}`
-        info.match(/^Pages:\s+(\d+)$/)[1].to_i
-      end
+                   info = `pdfinfo #{Shellwords.escape path.to_s}`
+                   info.match(/^Pages:\s+(\d+)$/)[1].to_i
+                 rescue NoMethodError
+                   raise "Bad PDF: #{path.to_s}"
+                 end
     end
 
     private
@@ -261,6 +264,7 @@ def build_toc
 
   build_chapters(html) { |c| book.add_chapter c }
 
+  FileUtils.mkdir_p(BOOK_PATH.dirname)
   BOOK_PATH.open('w') { |f| f.puts book.to_yaml }
 
   return book
