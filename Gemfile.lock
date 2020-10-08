@@ -2,10 +2,10 @@ GEM
   remote: https://rubygems.org/
   specs:
     mini_portile2 (2.4.0)
-    nokogiri (1.10.7)
+    nokogiri (1.10.10)
       mini_portile2 (~> 2.4.0)
     redcarpet (3.5.0)
-    yard (0.9.20)
+    yard (0.9.25)
 
 PLATFORMS
   ruby
@@ -16,4 +16,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.1.2
+   2.1.4
