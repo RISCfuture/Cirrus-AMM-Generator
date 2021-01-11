@@ -4,7 +4,7 @@ GEM
     mini_portile2 (2.4.0)
     nokogiri (1.10.10)
       mini_portile2 (~> 2.4.0)
-    redcarpet (3.5.0)
+    redcarpet (3.5.1)
     yard (0.9.25)
 
 PLATFORMS
