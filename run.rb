@@ -87,10 +87,10 @@ class Book
   end
 
   # @private
-  def as_json()=  { title:, chapters: chapters.map(&:as_json) }
+  def as_json()= {title:, chapters: chapters.map(&:as_json)}
 
   # @private
-  def to_json()= as_json.to_json
+  def to_json(*_args)= as_json.to_json
 
   # @private
   def self.from_json(json)
@@ -152,7 +152,7 @@ class Book
     end
 
     # @private
-    def as_json()= {number:, title:, sections: sections.map(&:as_json) }
+    def as_json()= {number:, title:, sections: sections.map(&:as_json)}
 
     def self.from_json(json)
       chapter = Chapter.new(json['number'], json['title'])
@@ -301,7 +301,7 @@ end
 
 def build_chapters(html)
   html.css('ul#x>li').each do |li|
-    full_title = strip(li.children.select(&:text?).first.content)
+    full_title = strip(li.children.find(&:text?).content)
     if full_title == "Front Matter"
       chapter = Book::Chapter.new(0, full_title)
     else
@@ -319,7 +319,7 @@ end
 
 def build_sections(chapter_li)
   chapter_li.css('ul>li>a').each do |a|
-    url     = URI.join(TOC_URL, a.attributes['href'].content)
+    url     = URI.join(TOC_URL.to_s, a.attributes['href'].content)
     matches = a.content.match(/^(?:\d+-(\d+) )?(.+)$/)
     number  = matches[1]&.to_i
     title   = strip(matches[2])

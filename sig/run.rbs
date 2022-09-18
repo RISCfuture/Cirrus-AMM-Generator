@@ -1,0 +1,153 @@
+# The URL for the SR22 AMM table of contents (displayed on the left IFrame on
+# the AMM home page).
+TOC_URL: URI::Generic
+
+# The temporary path where cache files are stored.
+WORK_PATH: Pathname
+
+# The path where the TOC data is cached after being downloaded.
+BOOK_PATH: Pathname
+
+# The path where PDFs are downloaded.
+PDF_PATH: Pathname
+
+# The path where converted PostScript files are stored.
+PS_PATH: Pathname
+
+# The path where table of contents metadata for the final PDF is saved.
+MARKS_PATH: Pathname
+
+# The path where the final PDF is generated.
+OUT_PATH: Pathname
+
+class Book
+  # @return [String] The book title.
+  attr_reader title: String
+
+  # @return [Array<Chapter>] The chapters of the book.
+  attr_reader chapters: Array[Chapter]
+
+  # @private
+  def initialize: (String title) -> void
+
+  def paths: () -> Array[Pathname]
+
+  def ps_paths: () -> Array[Pathname]
+
+  def add_chapter: (Chapter chapter) -> void
+
+  # @private
+  def as_json: () -> Hash[Symbol, untyped]
+
+  # @private
+  def to_json: (*untyped) -> String
+
+  # @private
+  def self.from_json: (Hash[String, untyped] json) -> Book
+
+  class Chapter
+    @book: Book
+
+    # @return [Integer] The chapter number. (Front Matter is given the chapter
+    #   number zero.)
+    attr_reader number: Integer
+
+    # @return [String] The chapter title.
+    attr_reader title: String
+
+    # @return [Array<Section>] The sections making up this chapter.
+    attr_reader sections: Array[Section]
+
+    # @private
+    def initialize: (Integer number, String title) -> void
+
+    def add_section: (Section section) -> void
+
+    def full_title: () -> String
+
+    def first_page: () -> Integer
+
+    def pages: () -> Integer
+
+    # @private
+    def as_json: () -> Hash[Symbol, untyped]
+
+    def self.from_json: (Hash[String, untyped] json) -> Chapter
+
+    private
+
+    def previous: () -> Chapter?
+  end
+
+  class Section
+    @chapter: Chapter
+
+    # @return [Integer, nil] The section number, or `nil` if the section is not
+    #   numbered.
+    attr_reader number: Integer?
+
+    # @return [String] The section title.
+    attr_reader title: String
+
+    # @return [URI::HTTPS] The URL for the section PDF.
+    attr_reader url: URI::Generic
+
+    # @private
+    def initialize: (Integer number, String title, URI::Generic url) -> void
+
+    def full_title: () -> String
+
+    def path: () -> Pathname
+
+    def ps_path: () -> Pathname
+
+    def download!: (untyped net) -> void
+
+    # @return [true, false] Whether or not the PDF has been downloaded.
+    # @see #download!
+    def downloaded?: () -> bool
+
+    def convert!: () -> void
+
+    # @return [true, false] Whether or not the PDF has been converted to a
+    #   PostScript file.
+    # @see #convert!
+    def converted?: () -> bool
+
+    def first_page: () -> Integer
+
+    def pages: () -> Integer
+
+    # @private
+    def as_json: () -> Hash[Symbol, untyped]
+
+    def self.from_json: (Hash[String, untyped] json) -> Section
+
+    private
+
+    def basename: (String ext) -> Array[String]
+
+    def previous: () -> Section?
+  end
+end
+
+class Object
+  def build_toc: () -> Book
+
+  def build_chapters: (Nokogiri::HTML::Document html) { (Book::Chapter) -> void } -> void
+
+  def build_sections: (Nokogiri::XML::Element chapter_li) { (Book::Section) -> void } -> void
+
+  def download_pdfs: (Book book) -> void
+
+  def generate_pdfmarks: (Book book) -> void
+
+  # necessary strip existing TOC information
+  def convert_to_ps: (Book book) -> void
+
+  def combine_pdfs: (Book book) -> void
+
+  def strip: (String txt) -> String
+
+  def run: () -> void
+end
