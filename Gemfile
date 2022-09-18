@@ -5,6 +5,6 @@ gem 'nokogiri'
 
 group :development do
   # DOCS
-  gem 'yard'
   gem 'redcarpet'
+  gem 'yard'
 end
