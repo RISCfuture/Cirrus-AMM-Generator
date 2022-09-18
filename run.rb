@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'async'
 require 'digest/sha2'
 require 'fileutils'
 require 'open-uri'
@@ -191,14 +192,16 @@ class Book
     # Downloads the PDF to the {#path}.
 
     def download!
-      Net::HTTP.start(url.host, url.port, ssl: url.scheme == 'https') do |http|
-        req = Net::HTTP::Get.new(url.path)
-        http.request(req) do |res|
-          raise("Couldn't download #{inspect}") unless res.kind_of?(Net::HTTPOK)
+      Async do
+        Net::HTTP.start(url.host, url.port, ssl: url.scheme == 'https') do |http|
+          req = Net::HTTP::Get.new(url.path)
+          http.request(req) do |res|
+            raise("Couldn't download #{inspect}") unless res.kind_of?(Net::HTTPOK)
 
-          FileUtils.mkdir_p(path.dirname)
-          path.open('wb') do |f|
-            res.read_body { |chunk| f.write chunk }
+            FileUtils.mkdir_p(path.dirname)
+            path.open('wb') do |f|
+              res.read_body { |chunk| f.write chunk }
+            end
           end
         end
       end
@@ -206,7 +209,7 @@ class Book
 
     # @return [true, false] Whether or not the PDF has been downloaded.
     # @see #download!
-    def downloaded?() path.exist? end
+    def downloaded? = path.exist?
 
     # Converts the PDF to a PostScript file (stripping bookmarks).
 
@@ -218,7 +221,7 @@ class Book
     # @return [true, false] Whether or not the PDF has been converted to a
     #   PostScript file.
     # @see #convert!
-    def converted?() ps_path.exist? end
+    def converted? = ps_path.exist?
 
     # @return [Integer] The first page of this section within the book
     #   (1-indexed).
@@ -236,18 +239,18 @@ class Book
       raise "Not yet downloaded: #{inspect}" unless downloaded?
 
       @pages ||= begin
-                   info = `pdfinfo #{Shellwords.escape path.to_s}`
-                   info.match(/^Pages:\s+(\d+)$/)[1].to_i
-                 rescue NoMethodError
-                   raise "Bad PDF: #{path.to_s}"
-                 end
+        info = `pdfinfo #{Shellwords.escape path.to_s}`
+        info.match(/^Pages:\s+(\d+)$/)[1].to_i
+      rescue NoMethodError
+        raise "Bad PDF: #{path}"
+      end
     end
 
     private
 
     def basename(ext)
       return @chapter.full_title.tr('/', '-'),
-          full_title.tr('/', '-') + '.' + ext
+        "#{full_title.tr('/', '-')}.#{ext}"
     end
 
     def previous
@@ -303,12 +306,14 @@ def build_sections(chapter_li)
 end
 
 def download_pdfs(book)
-  book.chapters.each do |chapter|
-    chapter.sections.each do |section|
-      next if section.downloaded?
+  Async do
+    book.chapters.each do |chapter|
+      chapter.sections.each do |section|
+        next if section.downloaded?
 
-      puts "Downloading #{section.title}..."
-      section.download!
+        puts "Downloading #{section.title}..."
+        section.download!
+      end
     end
   end
 end
