@@ -81,6 +81,7 @@ class Book
 
   class Section
     @chapter: Chapter
+    @pages: Integer?
 
     # @return [Integer, nil] The section number, or `nil` if the section is not
     #   numbered.

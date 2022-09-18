@@ -11,5 +11,5 @@ group :development do
   gem 'redcarpet'
   gem 'yard'
 
-  gem 'steep', github: 'soutaro/steep'
+  gem 'steep'
 end

@@ -45,3 +45,10 @@ Make sure you have one of the following at the ready to help pass the time:
 
 Generate HTML documentation by running `yard` on the command line. Generated
 documentation is saved in the `doc` directory.
+
+## Type Checking
+
+RBS files are provided, and the code can be type-checked using Steep. To set up
+type-checking, first install the `gem_rbs_collection` submodule with
+`git submodule update --init`. Then you can use `steep check` to type-check the
+code.
