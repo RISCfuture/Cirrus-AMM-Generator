@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'digest/sha2'
 require 'fileutils'
 require 'open-uri'
 require 'net/http'
@@ -12,22 +13,25 @@ Bundler.require
 
 # The URL for the SR22 AMM table of contents (displayed on the left IFrame on
 # the AMM home page).
-TOC_URL = URI.parse('http://servicecenters.cirrusdesign.com/tech_pubs/SR2X/pdf/AMM/SR22/html/ammtoc.html')
+TOC_URL = URI.parse('http://servicecenters.cirrusdesign.com/tech%5Fpubs/SR2X/pdf/amm/SR22/html/ammtoc.html')
+
+# The temporary path where cache files are stored.
+WORK_PATH = Pathname.new(__FILE__).dirname.join('work', Digest::SHA2.hexdigest(TOC_URL.to_s))
 
 # The path where the TOC data is cached after being downloaded.
-BOOK_PATH = Pathname.new(__FILE__).dirname.join('work', 'book.yml')
+BOOK_PATH = WORK_PATH.join('book.yml')
 
 # The path where PDFs are downloaded.
-PDF_PATH = Pathname.new(__FILE__).dirname.join('work', 'pdfs')
+PDF_PATH = WORK_PATH.join('pdfs')
 
 # The path where converted PostScript files are stored.
-PS_PATH = Pathname.new(__FILE__).dirname.join('work', 'ps')
+PS_PATH = WORK_PATH.join('ps')
 
 # The path where table of contents metadata for the final PDF is saved.
-MARKS_PATH = Pathname.new(__FILE__).dirname.join('work', 'pdfmarks')
+MARKS_PATH = WORK_PATH.join('pdfmarks')
 
 # The path where the final PDF is generated.
-OUT_PATH = Pathname.new(__FILE__).dirname.join('work', 'amm.pdf')
+OUT_PATH = WORK_PATH.join('amm.pdf')
 
 # Stores table of contents information downloaded from the AMM website,
 # consisting of multiple {Chapter Chapters}.
