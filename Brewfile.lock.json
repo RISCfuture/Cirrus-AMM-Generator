@@ -1,0 +1,60 @@
+{
+  "entries": {
+    "brew": {
+      "poppler": {
+        "version": "20.09.0",
+        "bottle": {
+          "cellar": "/usr/local/Cellar",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/poppler-20.09.0.catalina.bottle.tar.gz",
+              "sha256": "d39bb90130fd1f6c490415c700ad6d04961a93c75e83bf6f39abfbb764545c03"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/poppler-20.09.0.mojave.bottle.tar.gz",
+              "sha256": "850d6a9eb7fb0cb3279064e3e5f98e4a333abe0830109fcd0e52a50bab416c9d"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/poppler-20.09.0.high_sierra.bottle.tar.gz",
+              "sha256": "ba8f798e3f42437038ed00ee39373acfca335e6df246cfecf153779a268e2eee"
+            }
+          }
+        }
+      },
+      "ghostscript": {
+        "version": "9.53.3",
+        "bottle": {
+          "cellar": "/usr/local/Cellar",
+          "prefix": "/usr/local",
+          "files": {
+            "catalina": {
+              "url": "https://homebrew.bintray.com/bottles/ghostscript-9.53.3.catalina.bottle.tar.gz",
+              "sha256": "d6c05b6c190b6e908d09546977eb2dc111b475ced5db2719cba16ce89ce0b0ed"
+            },
+            "mojave": {
+              "url": "https://homebrew.bintray.com/bottles/ghostscript-9.53.3.mojave.bottle.tar.gz",
+              "sha256": "b5e6adcbf8f65731d1f3347e81e7ee494a77f35dae6a03aab4d735e714e07b05"
+            },
+            "high_sierra": {
+              "url": "https://homebrew.bintray.com/bottles/ghostscript-9.53.3.high_sierra.bottle.tar.gz",
+              "sha256": "c582c8db6f927273af8e33521aaa33111f216ba05ef36a6d4a2befe8da5d3062"
+            }
+          }
+        }
+      }
+    }
+  },
+  "system": {
+    "macos": {
+      "catalina": {
+        "HOMEBREW_VERSION": "2.5.3",
+        "HOMEBREW_PREFIX": "/usr/local",
+        "Homebrew/homebrew-core": "b9285624ec69deab9c14b752de33e07a049c3cce",
+        "CLT": "12.0.32.2",
+        "Xcode": "12.0.1",
+        "macOS": "10.15.7"
+      }
+    }
+  }
+}
