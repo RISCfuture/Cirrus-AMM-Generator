@@ -1,24 +1,59 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    mini_portile2 (2.5.3)
-    nokogiri (1.11.7)
-      mini_portile2 (~> 2.5.0)
+    async (2.0.2)
+      console (~> 1.10)
+      io-event (~> 1.0.0)
+      timers (~> 4.1)
+    async-http (0.56.6)
+      async (>= 1.25)
+      async-io (>= 1.28)
+      async-pool (>= 0.2)
+      protocol-http (~> 0.22.0)
+      protocol-http1 (~> 0.14.0)
+      protocol-http2 (~> 0.14.0)
+      traces (~> 0.4.0)
+    async-io (1.33.0)
+      async
+    async-pool (0.3.10)
+      async (>= 1.25)
+    console (1.15.0)
+      fiber-local
+    fiber-local (1.0.0)
+    io-event (1.0.9)
+    json (2.6.1)
+    mini_portile2 (2.8.0)
+    nokogiri (1.13.5)
+      mini_portile2 (~> 2.8.0)
       racc (~> 1.4)
-    nokogiri (1.11.7-x86_64-darwin)
+    nokogiri (1.13.5-x86_64-darwin)
       racc (~> 1.4)
-    racc (1.5.2)
+    protocol-hpack (1.4.2)
+    protocol-http (0.22.6)
+    protocol-http1 (0.14.4)
+      protocol-http (~> 0.22)
+    protocol-http2 (0.14.2)
+      protocol-hpack (~> 1.4)
+      protocol-http (~> 0.18)
+    racc (1.6.0)
     redcarpet (3.5.1)
-    yard (0.9.26)
+    timers (4.3.3)
+    traces (0.4.1)
+    webrick (1.7.0)
+    yard (0.9.27)
+      webrick (~> 1.7.0)
 
 PLATFORMS
   ruby
   x86_64-darwin-20
 
 DEPENDENCIES
+  async
+  async-http
+  json
   nokogiri
   redcarpet
   yard
 
 BUNDLED WITH
-   2.2.19
+   2.3.13

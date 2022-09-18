@@ -8,7 +8,6 @@ require 'net/http'
 require 'pathname'
 require 'shellwords'
 require 'uri'
-require 'yaml'
 require 'bundler'
 Bundler.require
 
@@ -20,7 +19,7 @@ TOC_URL = URI.parse('http://servicecenters.cirrusdesign.com/tech%5Fpubs/SR2X/pdf
 WORK_PATH = Pathname.new(__FILE__).dirname.join('work', Digest::SHA2.hexdigest(TOC_URL.to_s))
 
 # The path where the TOC data is cached after being downloaded.
-BOOK_PATH = WORK_PATH.join('book.yml')
+BOOK_PATH = WORK_PATH.join('book.json')
 
 # The path where PDFs are downloaded.
 PDF_PATH = WORK_PATH.join('pdfs')
@@ -87,6 +86,19 @@ class Book
     chapters << chapter
   end
 
+  # @private
+  def as_json()=  { title:, chapters: chapters.map(&:as_json) }
+
+  # @private
+  def to_json()= as_json.to_json
+
+  # @private
+  def self.from_json(json)
+    book = Book.new(json['title'])
+    json['chapters'].each { |c| book.add_chapter Chapter.from_json(c) }
+    return book
+  end
+
   # A chapter within the book, consisting of multiple {Section Sections}.
 
   class Chapter
@@ -137,6 +149,15 @@ class Book
 
     def pages
       sections.inject(0) { |sum, s| sum + s.pages }
+    end
+
+    # @private
+    def as_json()= {number:, title:, sections: sections.map(&:as_json) }
+
+    def self.from_json(json)
+      chapter = Chapter.new(json['number'], json['title'])
+      json['sections'].each { |s| chapter.add_section Section.from_json(s) }
+      return chapter
     end
 
     private
@@ -191,19 +212,13 @@ class Book
 
     # Downloads the PDF to the {#path}.
 
-    def download!
-      Async do
-        Net::HTTP.start(url.host, url.port, ssl: url.scheme == 'https') do |http|
-          req = Net::HTTP::Get.new(url.path)
-          http.request(req) do |res|
-            raise("Couldn't download #{inspect}") unless res.kind_of?(Net::HTTPOK)
-
-            FileUtils.mkdir_p(path.dirname)
-            path.open('wb') do |f|
-              res.read_body { |chunk| f.write chunk }
-            end
-          end
-        end
+    def download!(net)
+      response = net.get(url.to_s)
+      if response.status == 200
+        FileUtils.mkdir_p(path.dirname)
+        response.save path.to_s
+      else
+        raise "Couldn't download #{full_title}: #{response.status}"
       end
     end
 
@@ -246,6 +261,13 @@ class Book
       end
     end
 
+    # @private
+    def as_json()= {number:, title:, url:}
+
+    def self.from_json(json)
+      Section.new(json['number'], json['title'], json['url'])
+    end
+
     private
 
     def basename(ext)
@@ -263,7 +285,7 @@ class Book
 end
 
 def build_toc
-  return YAML.load_file(BOOK_PATH.to_s) if BOOK_PATH.exist?
+  return Book.from_json(JSON.parse(BOOK_PATH.read)) if BOOK_PATH.exist?
 
   html  = Nokogiri::HTML(TOC_URL.open)
   title = strip(html.css('p>b').first.content)
@@ -272,7 +294,7 @@ def build_toc
   build_chapters(html) { |c| book.add_chapter c }
 
   FileUtils.mkdir_p(BOOK_PATH.dirname)
-  BOOK_PATH.open('w') { |f| f.puts book.to_yaml }
+  BOOK_PATH.open('w') { |f| f.puts book.to_json }
 
   return book
 end
@@ -307,12 +329,14 @@ end
 
 def download_pdfs(book)
   Async do
+    net = Async::HTTP::Internet.new
+
     book.chapters.each do |chapter|
       chapter.sections.each do |section|
         next if section.downloaded?
 
         puts "Downloading #{section.title}..."
-        section.download!
+        section.download!(net)
       end
     end
   end
