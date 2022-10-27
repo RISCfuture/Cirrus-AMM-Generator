@@ -1,14 +1,16 @@
+# frozen_string_literal: true
+
 D = Steep::Diagnostic
 
 target :run do
-  signature 'sig'
+  signature "sig"
 
-  check 'run.rb'
+  check "run.rb"
 
-  library 'pathname', 'uri'
+  library "pathname", "uri"
 
   repo_path "vendor/rbs/gem_rbs_collection/gems"
-  library 'nokogiri' #, 'async-http'
+  library "nokogiri" #, 'async-http'
 
   configure_code_diagnostics(D::Ruby.strict)
 end

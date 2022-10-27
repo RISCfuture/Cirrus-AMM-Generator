@@ -1,2 +1,4 @@
-brew 'poppler'
-brew 'ghostscript'
+# frozen_string_literal: true
+
+brew "poppler"
+brew "ghostscript"

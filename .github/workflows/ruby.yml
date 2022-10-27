@@ -28,12 +28,15 @@ jobs:
           bundler-cache: true
       - name: Install Dependencies
         run: |
-          gem install bundler rubocop-performance rubocop-rspec rubocop-rails
+          gem install bundler rubocop-performance
           bundle install
       - name: Run Rubocop
         run: |
+          gem install rubocop-rails rubocop-rspec rubocop-performance
           git clone https://gist.github.com/65e21b9e8b0d1db285dcb4fc627b98fa.git .rubocop
-          cp .rubocop/.rubocop.yml .
+          cp .rubocop/.rubocop.yml .rubocop-ruby.yml
+          cat .rubocop.yml | sed -e 's/~\/.rubocop/.rubocop/' | sed -e 's/.rubocop.yml/.rubocop-ruby.yml/' > .rubocop2.yml
+          mv .rubocop2.yml .rubocop.yml
           rubocop --parallel
       - name: Run Steep
         run: bundle exec steep check

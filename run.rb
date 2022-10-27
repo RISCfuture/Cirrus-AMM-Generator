@@ -1,37 +1,37 @@
 # frozen_string_literal: true
 
-require 'async'
-require 'digest/sha2'
-require 'fileutils'
-require 'open-uri'
-require 'net/http'
-require 'pathname'
-require 'shellwords'
-require 'uri'
-require 'bundler'
+require "async"
+require "digest/sha2"
+require "fileutils"
+require "open-uri"
+require "net/http"
+require "pathname"
+require "shellwords"
+require "uri"
+require "bundler"
 Bundler.require
 
 # The URL for the SR22 AMM table of contents (displayed on the left IFrame on
 # the AMM home page).
-TOC_URL = URI.parse('http://servicecenters.cirrusdesign.com/tech%5Fpubs/SR2X/pdf/amm/SR22/html/ammtoc.html')
+TOC_URL = URI.parse("http://servicecenters.cirrusdesign.com/tech%5Fpubs/SR2X/pdf/amm/SR22/html/ammtoc.html")
 
 # The temporary path where cache files are stored.
-WORK_PATH = Pathname.new(__FILE__).dirname.join('work', Digest::SHA2.hexdigest(TOC_URL.to_s))
+WORK_PATH = Pathname.new(__FILE__).dirname.join("work", Digest::SHA2.hexdigest(TOC_URL.to_s))
 
 # The path where the TOC data is cached after being downloaded.
-BOOK_PATH = WORK_PATH.join('book.json')
+BOOK_PATH = WORK_PATH.join("book.json")
 
 # The path where PDFs are downloaded.
-PDF_PATH = WORK_PATH.join('pdfs')
+PDF_PATH = WORK_PATH.join("pdfs")
 
 # The path where converted PostScript files are stored.
-PS_PATH = WORK_PATH.join('ps')
+PS_PATH = WORK_PATH.join("ps")
 
 # The path where table of contents metadata for the final PDF is saved.
-MARKS_PATH = WORK_PATH.join('pdfmarks')
+MARKS_PATH = WORK_PATH.join("pdfmarks")
 
 # The path where the final PDF is generated.
-OUT_PATH = WORK_PATH.join('amm.pdf')
+OUT_PATH = WORK_PATH.join("amm.pdf")
 
 # Stores table of contents information downloaded from the AMM website,
 # consisting of multiple {Chapter Chapters}.
@@ -87,15 +87,15 @@ class Book
   end
 
   # @private
-  def as_json()= {title:, chapters: chapters.map(&:as_json)}
+  def as_json = {title:, chapters: chapters.map(&:as_json)}
 
   # @private
-  def to_json(*_args)= as_json.to_json
+  def to_json(*_args) = as_json.to_json
 
   # @private
   def self.from_json(json)
-    book = Book.new(json['title'])
-    json['chapters'].each { |c| book.add_chapter Chapter.from_json(c) }
+    book = Book.new(json["title"])
+    json["chapters"].each { |c| book.add_chapter Chapter.from_json(c) }
     return book
   end
 
@@ -134,7 +134,7 @@ class Book
     # @return [String] The chapter title with the number prepended.
 
     def full_title
-      "#{number.to_s.rjust 2, '0'} #{title}"
+      "#{number.to_s.rjust 2, "0"} #{title}"
     end
 
     # @return [Integer] The page that the chapter begins at (1-indexed).
@@ -152,11 +152,11 @@ class Book
     end
 
     # @private
-    def as_json()= {number:, title:, sections: sections.map(&:as_json)}
+    def as_json = {number:, title:, sections: sections.map(&:as_json)}
 
     def self.from_json(json)
-      chapter = Chapter.new(json['number'], json['title'])
-      json['sections'].each { |s| chapter.add_section Section.from_json(s) }
+      chapter = Chapter.new(json["number"], json["title"])
+      json["sections"].each { |s| chapter.add_section Section.from_json(s) }
       return chapter
     end
 
@@ -195,31 +195,29 @@ class Book
     # @return [String] The section title, with the section number prepended.
 
     def full_title
-      number ? "#{@chapter.number.to_s.rjust 2, '0'}-#{number.to_s.rjust 2, '0'} #{title}" : title
+      number ? "#{@chapter.number.to_s.rjust 2, "0"}-#{number.to_s.rjust 2, "0"} #{title}" : title
     end
 
     # @return [Pathname] The path where the PDF is (or will be) downloaded to.
 
     def path
-      PDF_PATH.join(*basename('pdf'))
+      PDF_PATH.join(*basename("pdf"))
     end
 
     # @return [Pathname] The path to the converted PostScript file.
 
     def ps_path
-      PS_PATH.join(*basename('ps'))
+      PS_PATH.join(*basename("ps"))
     end
 
     # Downloads the PDF to the {#path}.
 
     def download!(net)
       response = net.get(url.to_s)
-      if response.status == 200
-        FileUtils.mkdir_p(path.dirname)
-        response.save path.to_s
-      else
-        raise "Couldn't download #{full_title}: #{response.status}"
-      end
+      raise "Couldn't download #{full_title}: #{response.status}" unless response.status == 200
+
+      FileUtils.mkdir_p(path.dirname)
+      response.save path.to_s
     end
 
     # @return [true, false] Whether or not the PDF has been downloaded.
@@ -230,7 +228,7 @@ class Book
 
     def convert!
       FileUtils.mkdir_p(ps_path.dirname)
-      system 'pdftops', path.to_s, ps_path.to_s
+      system "pdftops", path.to_s, ps_path.to_s
     end
 
     # @return [true, false] Whether or not the PDF has been converted to a
@@ -262,17 +260,17 @@ class Book
     end
 
     # @private
-    def as_json()= {number:, title:, url:}
+    def as_json = {number:, title:, url:}
 
     def self.from_json(json)
-      Section.new(json['number'], json['title'], json['url'])
+      Section.new(json["number"], json["title"], json["url"])
     end
 
     private
 
     def basename(ext)
-      return @chapter.full_title.tr('/', '-'),
-        "#{full_title.tr('/', '-')}.#{ext}"
+      return @chapter.full_title.tr("/", "-"),
+        "#{full_title.tr("/", "-")}.#{ext}"
     end
 
     def previous
@@ -288,19 +286,19 @@ def build_toc
   return Book.from_json(JSON.parse(BOOK_PATH.read)) if BOOK_PATH.exist?
 
   html  = Nokogiri::HTML(TOC_URL.open)
-  title = strip(html.css('p>b').first.content)
+  title = strip(html.css("p>b").first.content)
   book  = Book.new(title)
 
   build_chapters(html) { |c| book.add_chapter c }
 
   FileUtils.mkdir_p(BOOK_PATH.dirname)
-  BOOK_PATH.open('w') { |f| f.puts book.to_json }
+  BOOK_PATH.open("w") { |f| f.puts book.to_json }
 
   return book
 end
 
 def build_chapters(html)
-  html.css('ul#x>li').each do |li|
+  html.css("ul#x>li").each do |li|
     full_title = strip(li.children.find(&:text?).content)
     if full_title == "Front Matter"
       chapter = Book::Chapter.new(0, full_title)
@@ -318,8 +316,8 @@ def build_chapters(html)
 end
 
 def build_sections(chapter_li)
-  chapter_li.css('ul>li>a').each do |a|
-    url     = URI.join(TOC_URL.to_s, a.attributes['href'].content)
+  chapter_li.css("ul>li>a").each do |a|
+    url     = URI.join(TOC_URL.to_s, a.attributes["href"].content)
     matches = a.content.match(/^(?:\d+-(\d+) )?(.+)$/)
     number  = matches[1]&.to_i
     title   = strip(matches[2])
@@ -345,7 +343,7 @@ end
 def generate_pdfmarks(book)
   return if MARKS_PATH.exist?
 
-  MARKS_PATH.open('w') do |f|
+  MARKS_PATH.open("w") do |f|
     f.puts <<~EOS.chomp
       [ /Title (#{book.title})
         /Author (Cirrus Design Inc.)
@@ -373,16 +371,16 @@ def convert_to_ps(book)
 end
 
 def combine_pdfs(book)
-  system 'gs',
-         '-dBATCH',
-         '-sDEVICE=pdfwrite',
-         '-o', OUT_PATH.to_s,
+  system "gs",
+         "-dBATCH",
+         "-sDEVICE=pdfwrite",
+         "-o", OUT_PATH.to_s,
          *book.ps_paths.map(&:to_s),
          MARKS_PATH.to_s
 end
 
 def strip(txt)
-  txt.sub(/^(\s| )+/, '').sub(/(\s| )+$/, '')
+  txt.sub(/^(\s| )+/, "").sub(/(\s| )+$/, "")
 end
 
 def run
