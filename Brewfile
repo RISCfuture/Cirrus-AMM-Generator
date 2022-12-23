@@ -1,0 +1,3 @@
+brew "ghostscript"
+brew "poppler"
+
