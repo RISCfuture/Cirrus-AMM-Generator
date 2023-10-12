@@ -1,7 +1,7 @@
 import Foundation
 
 /// Errors that can occur in Cirrus AMM Generator.
-public enum CirrusAMMGeneratorError: Error {
+package enum CirrusAMMGeneratorError: Error {
     
     /**
      A downloaded PDF file is missing for a section.
@@ -41,7 +41,7 @@ public enum CirrusAMMGeneratorError: Error {
 }
 
 extension CirrusAMMGeneratorError: LocalizedError {
-    public var errorDescription: String? {
+    package var errorDescription: String? {
         switch self {
             case .sectionNotDownloaded:
                 return NSLocalizedString("A section was not downloaded.", comment: "error description")
@@ -60,7 +60,7 @@ extension CirrusAMMGeneratorError: LocalizedError {
         }
     }
     
-    public var failureReason: String? {
+    package var failureReason: String? {
         switch self {
             case let .sectionNotDownloaded(name):
                 let format = t("Expected the section “%@” to be downloaded, but it wasn’t.", comment: "failure reason")
@@ -88,7 +88,7 @@ extension CirrusAMMGeneratorError: LocalizedError {
         }
     }
     
-    public var recoverySuggestion: String? {
+    package var recoverySuggestion: String? {
         switch self {
             case .sectionNotDownloaded:
                 return t("Try removing the work/book.json file and re-running the Generator.", comment: "recovery suggestion")

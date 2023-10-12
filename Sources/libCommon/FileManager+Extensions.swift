@@ -1,7 +1,7 @@
 import Foundation
 
 extension FileManager {
-    public func createDirectoryUnlessExists(at url: URL) throws {
+    package func createDirectoryUnlessExists(at url: URL) throws {
         var isDirectory: ObjCBool = false
         if fileExists(atPath: url.path, isDirectory: &isDirectory) {
             if !isDirectory.boolValue {
