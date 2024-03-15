@@ -89,18 +89,24 @@ public class Book {
             self.data = data
         } else {
             self.data = try await TOCReader(url: tocURL).data()
-            try self.data.save(to: bookInfoURL)
+            try self.saveBookData()
         }
     }
     
     /// Downloads all PDF chapter files into ``workingDirectory``.
     public func downloadPDFs() async throws {
-        await eachSection() { section in
-            guard !section.isDownloaded else { return }
+        try await eachSection() { section in
+            guard !section.isDownloaded else { return false }
             
             self.logger?.info("-- Downloading \(section.data.title)")
             try FileManager.default.createDirectoryUnlessExists(at: section.pdfURL.deletingLastPathComponent())
-            try await PDFDownloader.download(from: section.data.url, to: section.pdfURL)
+            do {
+                try await PDFDownloader.download(from: section.data.url, to: section.pdfURL)
+            } catch {
+                if section.data.title == "Log of Temporary Revisions" { return true }
+                else { throw error }
+            }
+            return false
         }
     }
     
@@ -119,7 +125,6 @@ public class Book {
             try handle.write(pdfMarks)
             
             for chapter in chapters {
-
                 let sections = chapter.sections.count
                 let title = chapter.data.fullTitle
                 let page = try await chapter.firstPage()
@@ -142,12 +147,14 @@ public class Book {
     /// Converts all downloaded PDFs to PostScript files. This is necessary to
     /// strip existing TOC metadata.
     public func convertToPS() async throws {
-        await eachSection() { section in
-            guard !section.isConverted else { return }
+        try await eachSection() { section in
+            guard !section.isConverted else { return false }
             
             self.logger?.info("-- Converting \(section.data.title)")
             try FileManager.default.createDirectoryUnlessExists(at: section.psURL.deletingLastPathComponent())
             try await PDFToPSConverter.convert(from: section.pdfURL, to: section.psURL)
+            
+            return false
         }
     }
     
@@ -158,14 +165,27 @@ public class Book {
         try await PSToPDFConverter.convert(book: self, marksURL: pdfMarksURL, output: outputURL)
     }
     
-    private func eachSection(_ handler: @escaping (Section) async throws -> Void) async {
-        await withThrowingTaskGroup(of: Void.self) { group in
-            for chapter in chapters {
+    private func eachSection(_ handler: @escaping (Section) async throws -> Bool) async throws {
+        try await withThrowingTaskGroup(of: (Int, URL)?.self) { group in
+            for (chapterIndex, chapter) in self.chapters.enumerated() {
                 for section in chapter.sections {
-                    group.addTask { try await handler(section) }
+                    group.addTask {
+                        let shouldDelete = try await handler(section)
+                        return shouldDelete ? (chapterIndex, section.data.url) : nil
+                    }
                 }
             }
+            
+            for try await toDelete in group {
+                guard let toDelete = toDelete else { continue }
+                chapters[toDelete.0].sections.removeAll(where: { $0.data.url == toDelete.1 })
+            }
+            try self.saveBookData()
         }
+    }
+    
+    private func saveBookData() throws {
+        try self.data.save(to: bookInfoURL)
     }
 }
 

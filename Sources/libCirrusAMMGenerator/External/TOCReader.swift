@@ -75,34 +75,34 @@ class TOCReader {
     }
     
     private func chapters(doc: Document, handler: (ChapterData) -> Void) throws {
+        var chapter: ChapterData? = nil
         for li in try doc.select("ul#x>nobr>li") {
             let title = strip(li.ownText())
             
-            var chapter: ChapterData
-            if title == "Front Matter" {
+            if title.hasPrefix("Front Matter") {
                 chapter = ChapterData(number: 0, title: title)
-            } else {
-                guard let matches = try chapterRx.wholeMatch(in: title) else {
-                    throw CirrusAMMGeneratorError.badTOC
-                }
+            } else if let matches = try chapterRx.wholeMatch(in: title) {
                 chapter = ChapterData(number: matches.1, title: String(matches.2))
+            } else {
+                chapter = ChapterData(number: (chapter?.number ?? 0) + 1, title: title)
             }
             
-            try sections(li: li) { chapter.sections.append($0) }
-            handler(chapter)
+            try sections(li: li) { chapter!.sections.append($0) }
+            handler(chapter!)
         }
     }
     
     private func sections(li: Element, handler: (SectionData) -> Void) throws {
         for a in try li.select("ul>li>a") {
-            let url = try url.deletingLastPathComponent().appending(path: a.attr("href")).standardized
+            let path = try a.attr("href").prefix(while: { $0 != "#"})
+            let url = url.deletingLastPathComponent().appending(path: path).standardized
             guard let matches = try sectionRx.wholeMatch(in: a.ownText()) else {
                 throw CirrusAMMGeneratorError.badTOC
             }
             
             let section = SectionData(number: matches.1,
                                   title: String(matches.2),
-                                  url: url)
+                                      url: url)
             handler(section)
         }
     }
