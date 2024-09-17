@@ -44,72 +44,64 @@ extension CirrusAMMGeneratorError: LocalizedError {
     package var errorDescription: String? {
         switch self {
             case .sectionNotDownloaded:
-                return NSLocalizedString("A section was not downloaded.", comment: "error description")
+                return String(localized: "A section was not downloaded.", comment: "error description")
             case .downloadFailed:
-                return NSLocalizedString("A file could not be downloaded.", comment: "error description")
+                return String(localized: "A file could not be downloaded.", comment: "error description")
             case .couldntParsePDF:
-                return NSLocalizedString("A PDF could not be parsed.", comment: "error description")
+                return String(localized: "A PDF could not be parsed.", comment: "error description")
             case .couldntConvertPDFToPS:
-                return NSLocalizedString("Failed to convert a PDF to PostScript.", comment: "error description")
+                return String(localized: "Failed to convert a PDF to PostScript.", comment: "error description")
             case .couldntConvertPStoPDF:
-                return NSLocalizedString("Failed to convert a PostScript file to PDF.", comment: "error description")
+                return String(localized: "Failed to convert a PostScript file to PDF.", comment: "error description")
             case .badTOC:
-                return NSLocalizedString("The Table of Contents page could not be parsed.", comment: "error description")
+                return String(localized: "The Table of Contents page could not be parsed.", comment: "error description")
             case .badEncoding:
-                return NSLocalizedString("The Table of Contents page was in an unexpected encoding.", comment: "error description")
+                return String(localized: "The Table of Contents page was in an unexpected encoding.", comment: "error description")
         }
     }
     
     package var failureReason: String? {
         switch self {
             case let .sectionNotDownloaded(name):
-                let format = t("Expected the section “%@” to be downloaded, but it wasn’t.", comment: "failure reason")
-                return String(format: format, name)
+                return String(localized: "Expected the section “\(name)” to be downloaded, but it wasn’t.", comment: "failure reason")
             case let .downloadFailed(url, response):
                 if let response = response as? HTTPURLResponse {
-                    let format = t("Response %d received when downloading “%@”.", comment: "failure reason")
-                    return String(format: format, response.statusCode, url.absoluteString)
+                    return String(
+                        localized: "Response \(response.statusCode) received when downloading “\(url.absoluteString)”.",
+                        comment: "failure reason"
+                    )
                 } else {
-                    let format = t("Unexpected response type when downloading “%@”.", comment: "failure reason")
-                    return String(format: format, url.absoluteString)
+                    return String(localized: "Unexpected response type when downloading “\(url.absoluteString)”.", comment: "failure reason")
                 }
             case let .couldntParsePDF(url):
-                let format = t("The file at “%@” doesn’t seem to be a valid PDF file.", comment: "failure reason")
-                return String(format: format, url.path)
+                return String(localized: "The file at “\(url.path)” doesn’t seem to be a valid PDF file.", comment: "failure reason")
             case let .couldntConvertPDFToPS(url):
-                let format = t("Poppler could not convert the file at “%@” from PDF to PostScript.", comment: "failure reason")
-                return String(format: format, url.path)
+                return String(localized: "Poppler could not convert the file at “\(url.path)” from PDF to PostScript.", comment: "failure reason")
             case .couldntConvertPStoPDF:
-                return t("GhostScript could not recombine the PostScript files into a PDF file.", comment: "failure reason")
+                return String(localized: "GhostScript could not recombine the PostScript files into a PDF file.", comment: "failure reason")
             case .badTOC:
-                return t("The page had an unexpected HTML structure.", comment: "failure reason")
+                return String(localized: "The page had an unexpected HTML structure.", comment: "failure reason")
             case .badEncoding:
-                return t("The HTML page was not ISO-8859-1 encoded.", comment: "failure reason")
+                return String(localized: "The HTML page was not ISO-8859-1 encoded.", comment: "failure reason")
         }
     }
     
     package var recoverySuggestion: String? {
         switch self {
             case .sectionNotDownloaded:
-                return t("Try removing the work/book.json file and re-running the Generator.", comment: "recovery suggestion")
+                return String(localized: "Try removing the work/book.json file and re-running the Generator.", comment: "recovery suggestion")
             case .downloadFailed:
-                return t("Verify that the Cirrus web site is accessible and the URL is correct. If not, try removing the “work/book.json” file and re-running the Generator.", comment: "recovery suggestion")
+                return String(localized: "Verify that the Cirrus web site is accessible and the URL is correct. If not, try removing the “work/book.json” file and re-running the Generator.", comment: "recovery suggestion")
             case let .couldntParsePDF(url):
-                let format = t("Verify the PDF is properly formatted. If not, try removing the “%@” file and re-running the generator. You can also try updating Poppler.", comment: "recovery suggestion")
-                return String(format: format, url.path)
+                return String(localized: "Verify the PDF is properly formatted. If not, try removing the “\(url.path)” file and re-running the generator. You can also try updating Poppler.", comment: "recovery suggestion")
             case let .couldntConvertPDFToPS(url):
-                let format = t("Verify the PDF is properly formatted. If not, try removing the “%@” file and re-running the generator. You can also try updating Poppler.", comment: "recovery suggestion")
-                return String(format: format, url.path)
+                return String(localized: "Verify the PDF is properly formatted. If not, try removing the “\(url.path)” file and re-running the generator. You can also try updating Poppler.", comment: "recovery suggestion")
             case .couldntConvertPStoPDF:
-                return t("Verify the files in “work/ps” are properly formatted. If not, try removing the “work” directory and re-running the generatror. You can also try updating GhostScript.", comment: "recovery suggestion")
+                return String(localized: "Verify the files in “work/ps” are properly formatted. If not, try removing the “work” directory and re-running the generatror. You can also try updating GhostScript.", comment: "recovery suggestion")
             case .badTOC:
-                return t("Verify the URL you are passing to the generator is correct. (It must be the URL to the TOC frame specifically, not the AMM page.) If so, Cirrus may have changed the format of their Table of Contents page, which will require modifying the code for the Generator.", comment: "recovery suggestion")
+                return String(localized: "Verify the URL you are passing to the generator is correct. (It must be the URL to the TOC frame specifically, not the AMM page.) If so, Cirrus may have changed the format of their Table of Contents page, which will require modifying the code for the Generator.", comment: "recovery suggestion")
             case .badEncoding:
-                return t("Verify the URL you are passing to the generator is correct. (It must be the URL to the TOC frame specifically, not the AMM page.) If so, Cirrus may have changed the format of their Table of Contents page, which will require modifying the code for the Generator.", comment: "recovery suggestion")
+                return String(localized: "Verify the URL you are passing to the generator is correct. (It must be the URL to the TOC frame specifically, not the AMM page.) If so, Cirrus may have changed the format of their Table of Contents page, which will require modifying the code for the Generator.", comment: "recovery suggestion")
         }
     }
-}
-
-fileprivate func t(_ key: String, comment: String) -> String {
-    return NSLocalizedString(key, bundle: Bundle.module, comment: comment)
 }

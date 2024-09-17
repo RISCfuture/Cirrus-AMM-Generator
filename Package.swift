@@ -29,8 +29,7 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 "SwiftSoup"
             ]),
-        .target(name: "libCommon",
-                resources: [.process("Resources")]),
+        .target(name: "libCommon"),
         .executableTarget(
             name: "CirrusAMMGenerator",
             dependencies: [

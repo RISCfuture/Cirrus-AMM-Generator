@@ -1,0 +1,85 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "A file could not be downloaded." : {
+      "comment" : "error description"
+    },
+    "A PDF could not be parsed." : {
+      "comment" : "error description"
+    },
+    "A section was not downloaded." : {
+      "comment" : "error description"
+    },
+    "Expected the section “%@” to be downloaded, but it wasn’t." : {
+      "comment" : "failure reason"
+    },
+    "Failed to convert a PDF to PostScript." : {
+      "comment" : "error description"
+    },
+    "Failed to convert a PostScript file to PDF." : {
+      "comment" : "error description"
+    },
+    "GhostScript could not recombine the PostScript files into a PDF file." : {
+      "comment" : "failure reason"
+    },
+    "Poppler could not convert the file at “%@” from PDF to PostScript." : {
+      "comment" : "failure reason"
+    },
+    "Response %d received when downloading “%@”." : {
+      "comment" : "failure reason",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Response %1$d received when downloading “%2$@”."
+          }
+        }
+      }
+    },
+    "Response %lld received when downloading “%@”." : {
+      "comment" : "failure reason",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Response %1$lld received when downloading “%2$@”."
+          }
+        }
+      }
+    },
+    "The file at “%@” doesn’t seem to be a valid PDF file." : {
+      "comment" : "failure reason"
+    },
+    "The HTML page was not ISO-8859-1 encoded." : {
+      "comment" : "failure reason"
+    },
+    "The page had an unexpected HTML structure." : {
+      "comment" : "failure reason"
+    },
+    "The Table of Contents page could not be parsed." : {
+      "comment" : "error description"
+    },
+    "The Table of Contents page was in an unexpected encoding." : {
+      "comment" : "error description"
+    },
+    "Try removing the work/book.json file and re-running the Generator." : {
+      "comment" : "recovery suggestion"
+    },
+    "Unexpected response type when downloading “%@”." : {
+      "comment" : "failure reason"
+    },
+    "Verify that the Cirrus web site is accessible and the URL is correct. If not, try removing the “work/book.json” file and re-running the Generator." : {
+      "comment" : "recovery suggestion"
+    },
+    "Verify the files in “work/ps” are properly formatted. If not, try removing the “work” directory and re-running the generatror. You can also try updating GhostScript." : {
+      "comment" : "recovery suggestion"
+    },
+    "Verify the PDF is properly formatted. If not, try removing the “%@” file and re-running the generator. You can also try updating Poppler." : {
+      "comment" : "recovery suggestion"
+    },
+    "Verify the URL you are passing to the generator is correct. (It must be the URL to the TOC frame specifically, not the AMM page.) If so, Cirrus may have changed the format of their Table of Contents page, which will require modifying the code for the Generator." : {
+      "comment" : "recovery suggestion"
+    }
+  },
+  "version" : "1.0"
+}
