@@ -103,7 +103,7 @@ public class Book {
             do {
                 try await PDFDownloader.download(from: section.data.url, to: section.pdfURL)
             } catch {
-                if section.data.title == "Log of Temporary Revisions" { return true }
+                if section.data.title == "Log of Temporary Revisions" || section.data.title == "33-40-07 Step Lights" { return true }
                 else { throw error }
             }
             return false
