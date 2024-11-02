@@ -20,7 +20,7 @@ again.
 
 ## Requirements
 
-This tool requires Swift 5.7 with the Swift Package Manager. You must also have
+This tool requires Swift 6 with the Swift Package Manager. You must also have
 the following binaries in your `$PATH`:
 
 * `gs` (from Ghostscript)

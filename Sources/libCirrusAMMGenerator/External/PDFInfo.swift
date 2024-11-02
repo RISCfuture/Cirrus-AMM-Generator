@@ -1,20 +1,9 @@
 import Foundation
-import RegexBuilder
 import libCommon
 
-class PDFInfo {
-    var url: URL
-    
-    private static let pagesRegex = Regex {
-        Anchor.startOfLine
-        "Pages:"
-        OneOrMore(.whitespace)
-        TryCapture {
-            OneOrMore(.digit)
-        } transform: { UInt($0) }
-        Anchor.endOfLine
-    }
-    
+final class PDFInfo: Sendable {
+    let url: URL
+
     init(url: URL) {
         self.url = url
     }

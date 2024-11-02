@@ -4,8 +4,8 @@ import Foundation
  Stores table of contents information downloaded from the AMM website,
  consisting of multiple ``Chapter``s.
  */
-struct BookData: Codable {
-    
+struct BookData: Codable, Sendable {
+
     /// The book title.
     var title: String
     
@@ -30,8 +30,8 @@ struct BookData: Codable {
 }
 
 /// A chapter within the book, consisting of multiple ``Section``s.
-struct ChapterData: Codable, Equatable {
-    
+struct ChapterData: Codable, Equatable, Sendable {
+
     /// The chapter number. (Front Matter is given the chapter number `0`.)
     var number: UInt
     
@@ -51,7 +51,7 @@ struct ChapterData: Codable, Equatable {
     }
 }
 
-struct SectionData: Codable, Equatable {
+struct SectionData: Codable, Equatable, Sendable {
     var number: UInt?
     var title: String
     var url: URL

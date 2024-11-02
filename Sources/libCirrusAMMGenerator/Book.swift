@@ -19,7 +19,7 @@ import libCommon
  off.
  */
 
-public class Book {
+public actor Book {
     var data: BookData
     
     /// The URL for the Table of Contents HTML page.
@@ -27,7 +27,8 @@ public class Book {
     
     /// A logger to record progress.
     public var logger: Logger? = nil
-    
+    public func setLogger(_ logger: Logger?) { self.logger = logger }
+
     /// The path where working files are stored, as well the output file.
     public let workingDirectory: URL
     
@@ -50,23 +51,35 @@ public class Book {
     lazy public var outputURL = workingDirectory.appending(path: filename)
     
     lazy var chapters = data.chapters.map { Chapter(book: self, data: $0) }
-    
+
     /// An ordered array of all the PDFs to merge.
-    lazy var pdfPaths: Array<URL> = chapters.reduce(into: []) { paths, chapter in
-        for section in chapter.sections {
-            guard section.isDownloaded else { fatalError("PDFs not yet downloaded") }
-            paths.append(section.pdfURL)
+    var pdfPaths: Array<URL> {
+        get async {
+            var pdfPaths = Array<URL>()
+            for chapter in chapters {
+                for section in await chapter.sections {
+                    guard await section.isDownloaded else { fatalError("PDFs not yet downloaded") }
+                    await pdfPaths.append(section.pdfURL)
+                }
+            }
+            return pdfPaths
         }
     }
-    
+
     /// An ordered array of all the converted PostScript files to merge.
-    lazy var psPaths: Array<URL> = chapters.reduce(into: []) { paths, chapter in
-        for section in chapter.sections {
-            guard section.isDownloaded else { fatalError("PDFs not yet downloaded") }
-            paths.append(section.psURL)
+    var psPaths: Array<URL> {
+        get async {
+            var psPaths = Array<URL>()
+            for chapter in chapters {
+                for section in await chapter.sections {
+                    guard await section.isDownloaded else { fatalError("PDFs not yet downloaded") }
+                    await psPaths.append(section.psURL)
+                }
+            }
+            return psPaths
         }
     }
-    
+
     /**
      Creates a new PDF generator. This initializer attempts to read
      already-downloaded table of contents data from `workingDirectory`;
@@ -84,7 +97,7 @@ public class Book {
         self.workingDirectory = workingDirectory
         bookInfoURL = workingDirectory.appending(path: "book.json")
         self.filename = filename
-        
+
         if let data = try BookData.fromSavedData(at: bookInfoURL) {
             self.data = data
         } else {
@@ -95,18 +108,38 @@ public class Book {
     
     /// Downloads all PDF chapter files into ``workingDirectory``.
     public func downloadPDFs() async throws {
-        try await eachSection() { section in
-            guard !section.isDownloaded else { return false }
-            
-            self.logger?.info("-- Downloading \(section.data.title)")
-            try FileManager.default.createDirectoryUnlessExists(at: section.pdfURL.deletingLastPathComponent())
-            do {
-                try await PDFDownloader.download(from: section.data.url, to: section.pdfURL)
-            } catch {
-                if section.data.title == "Log of Temporary Revisions" || section.data.title == "33-40-07 Step Lights" { return true }
-                else { throw error }
+        let urlsToRemove = try await withThrowingTaskGroup(of: (Int, URL)?.self) { group in
+            for (chapterIndex, chapter) in self.chapters.enumerated() {
+                for section in await chapter.sections {
+                    guard await !section.isDownloaded else { continue }
+
+                    group.addTask {
+                        let title = await section.data.title
+                        Task { @MainActor in await self.logger?.info("-- Downloading \(title)") }
+                        try await FileManager.default.createDirectoryUnlessExists(at: section.pdfURL.deletingLastPathComponent())
+                        do {
+                            try await PDFDownloader.download(from: section.data.url, to: section.pdfURL)
+                        } catch {
+                            if title == "Log of Temporary Revisions" || title == "33-40-07 Step Lights" {
+                                return await (chapterIndex, section.data.url)
+                            }
+                            else { throw error }
+                        }
+                        return nil
+                    }
+                }
             }
-            return false
+
+            var urlsToRemove = Dictionary<Int, Set<URL>>()
+            for try await pair in group {
+                guard let (chapterIndex, sectionURL) = pair else { continue }
+                urlsToRemove[chapterIndex, default: Set()].insert(sectionURL)
+            }
+            return urlsToRemove
+        }
+
+        for (chapterIndex, urls) in urlsToRemove {
+            await chapters[chapterIndex].removeAllSections(matchingURLs: urls)
         }
     }
     
@@ -125,13 +158,13 @@ public class Book {
             try handle.write(pdfMarks)
             
             for chapter in chapters {
-                let sections = chapter.sections.count
-                let title = chapter.data.fullTitle
+                let sections = await chapter.sections.count
+                let title = await chapter.data.fullTitle
                 let page = try await chapter.firstPage()
                 try handle.write("[/Count -\(sections) /Title (\(title)) /Page \(page) /OUT pdfmark\n")
                 
-                for section in chapter.sections {
-                    let title = section.fullTitle
+                for section in await chapter.sections {
+                    let title = await section.fullTitle
                     let page = try await section.firstPage()
                     try handle.write("[/Title (\(title)) /Page \(page) /OUT pdfmark\n")
                 }
@@ -147,14 +180,19 @@ public class Book {
     /// Converts all downloaded PDFs to PostScript files. This is necessary to
     /// strip existing TOC metadata.
     public func convertToPS() async throws {
-        try await eachSection() { section in
-            guard !section.isConverted else { return false }
-            
-            self.logger?.info("-- Converting \(section.data.title)")
-            try FileManager.default.createDirectoryUnlessExists(at: section.psURL.deletingLastPathComponent())
-            try await PDFToPSConverter.convert(from: section.pdfURL, to: section.psURL)
-            
-            return false
+        try await withThrowingDiscardingTaskGroup { group in
+            for chapter in self.chapters {
+                for section in await chapter.sections {
+                    guard await !section.isConverted else { continue }
+
+                    group.addTask {
+                        let title = await section.data.title
+                        Task { @MainActor in await self.logger?.info("-- Converting \(title)") }
+                        try await FileManager.default.createDirectoryUnlessExists(at: section.psURL.deletingLastPathComponent())
+                        try await PDFToPSConverter.convert(from: section.pdfURL, to: section.psURL)
+                    }
+                }
+            }
         }
     }
     
@@ -164,33 +202,18 @@ public class Book {
         try FileManager.default.createDirectoryUnlessExists(at: outputURL.deletingLastPathComponent())
         try await PSToPDFConverter.convert(book: self, marksURL: pdfMarksURL, output: outputURL)
     }
-    
-    private func eachSection(_ handler: @escaping (Section) async throws -> Bool) async throws {
-        try await withThrowingTaskGroup(of: (Int, URL)?.self) { group in
-            for (chapterIndex, chapter) in self.chapters.enumerated() {
-                for section in chapter.sections {
-                    group.addTask {
-                        let shouldDelete = try await handler(section)
-                        return shouldDelete ? (chapterIndex, section.data.url) : nil
-                    }
-                }
-            }
-            
-            for try await toDelete in group {
-                guard let toDelete = toDelete else { continue }
-                chapters[toDelete.0].sections.removeAll(where: { $0.data.url == toDelete.1 })
-            }
-            try self.saveBookData()
-        }
-    }
-    
+
     private func saveBookData() throws {
         try self.data.save(to: bookInfoURL)
     }
 }
 
-class Chapter {
-    weak var book: Book?
+actor Chapter {
+    deinit {
+        print("deinit \(data.title)")
+    }
+
+    unowned var book: Book
     var data: ChapterData
     
     lazy var sections = data.sections.map { Section(chapter: self, data: $0) }
@@ -198,13 +221,14 @@ class Chapter {
     private var _firstPage: UInt? = nil
     
     private var previous: Chapter? {
-        guard let book = book else { fatalError("No Book for Chapter") }
-        guard let index = book.data.chapters.firstIndex(where: { data == $0 }) else {
-            fatalError("Can’t find Chapter in Book")
+        get async {
+            guard let index = await book.data.chapters.firstIndex(where: { data == $0 }) else {
+                fatalError("Can’t find Chapter in Book")
+            }
+            guard index > 0 else { return nil }
+
+            return await book.chapters[index - 1]
         }
-        guard index > 0 else { return nil }
-        
-        return book.chapters[index - 1]
     }
     
     init(book: Book, data: ChapterData) {
@@ -229,63 +253,85 @@ class Chapter {
     func firstPage() async throws -> UInt {
         if let _firstPage = _firstPage { return _firstPage }
         
-        guard let previous = previous else { return 1 }
+        guard let previous = await previous else { return 1 }
         _firstPage = try await previous.firstPage() + previous.pages()
         return _firstPage!
     }
+
+    func removeAllSections(matchingURLs urls: Set<URL>) async {
+        var newSections = Array<Section>()
+        for section in sections {
+            if await !urls.contains(section.data.url) {
+                newSections.append(section)
+            }
+        }
+        sections = newSections
+    }
 }
 
-class Section {
-    private weak var chapter: Chapter?
+actor Section {
+    private unowned var chapter: Chapter
     var data: SectionData
-    
-    lazy private var book = chapter?.book
+
+    private var book: Book! { get async { await chapter.book } }
     private var _pages: UInt? = nil
     private var _firstPage: UInt? = nil
-    
+
     var fullTitle: String {
-        guard let chapter = chapter else { fatalError("No Chapter for Section") }
-        if let numberStr = data.numberStr {
-            return "\(chapter.data.numberStr)-\(numberStr) \(data.title)"
-        } else {
-            return data.title
+        get async {
+            if let numberStr = data.numberStr {
+                return await "\(chapter.data.numberStr)-\(numberStr) \(data.title)"
+            } else {
+                return data.title
+            }
         }
     }
-    
+
     /// The path where the PDF is (or will be) downloaded to.
     var pdfURL: URL {
-        guard let book = book else { fatalError("No Book for Section") }
-        return book.pdfsURL.appending(path: basename(extension: "pdf"))
+        get async {
+            return await book.pdfsURL.appending(path: basename(extension: "pdf"))
+        }
     }
     
     /// The path where the converted PostScript file is (or will be) saved.
     var psURL: URL {
-        guard let book = book else { fatalError("No Book for Section") }
-        return book.psURL.appending(path: basename(extension: "ps"))
+        get async {
+            return await book.psURL.appending(path: basename(extension: "ps"))
+        }
     }
     
     /// Whether or not the PDF has been downloaded.
     var isDownloaded: Bool {
-        FileManager.default.fileExists(atPath: pdfURL.path)
+        get async {
+            await FileManager.default.fileExists(atPath: pdfURL.path)
+        }
     }
     
     /// Whether or not the PDF has been converted to a PostScript file.
     var isConverted: Bool {
-        FileManager.default.fileExists(atPath: psURL.path)
-    }
-    
-    private var pdfInfo: PDFInfo { .init(url: pdfURL) }
-    
-    private var previous: Section? {
-        guard let chapter = chapter else { fatalError("No Chapter for Section") }
-        guard let index = chapter.data.sections.firstIndex(where: { data == $0 }) else {
-            fatalError("Can’t find Section in Chapter")
+        get async {
+            await FileManager.default.fileExists(atPath: psURL.path)
         }
-        guard index > 0 else { return nil }
-        
-        return chapter.sections[index - 1]
     }
     
+    private var pdfInfo: PDFInfo {
+        get async {
+            await .init(url: pdfURL)
+        }
+    }
+
+    private var previous: Section? {
+        get async {
+            guard let index = await chapter.data.sections.firstIndex(where: { data == $0 }) else {
+                fatalError("Can’t find Section in Chapter")
+            }
+            guard index > 0 else { return nil }
+
+            return await chapter.sections[index - 1]
+        }
+    }
+
     init(chapter: Chapter, data: SectionData) {
         self.chapter = chapter
         self.data = data
@@ -294,11 +340,8 @@ class Section {
     func firstPage() async throws -> UInt {
         if let _firstPage = _firstPage { return _firstPage }
         
-        guard let chapter = chapter else {
-            fatalError("No Chapter for Section")
-        }
-        guard let previous = previous else { return try await chapter.firstPage() }
-        
+        guard let previous = await previous else { return try await chapter.firstPage() }
+
         _firstPage = try await previous.firstPage() + previous.pages()
         return _firstPage!
     }
@@ -308,12 +351,11 @@ class Section {
         _pages = try await pdfInfo.pages()
         return _pages!
     }
-    
-    private func basename(`extension`: String) -> String {
-        guard let chapter = chapter else { fatalError("No Chapter for Section") }
-        let name = fullTitle.replacingOccurrences(of: "/", with: "-")
-        
-        return [
+
+    private func basename(`extension`: String) async -> String {
+        let name = await fullTitle.replacingOccurrences(of: "/", with: "-")
+
+        return await [
             chapter.data.fullTitle.replacingOccurrences(of: "/", with: "-"),
             "\(name).\(`extension`)"
         ].joined(separator: "/")

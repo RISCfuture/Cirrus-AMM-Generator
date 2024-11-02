@@ -3,7 +3,7 @@ import SwiftSoup
 import RegexBuilder
 import libCommon
 
-class TOCReader {
+actor TOCReader {
     let url: URL
     
     private var session: URLSession { .init(configuration: .ephemeral) }

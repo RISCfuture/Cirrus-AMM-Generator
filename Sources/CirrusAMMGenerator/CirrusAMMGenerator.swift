@@ -6,7 +6,6 @@ import libCirrusAMMGenerator
 
 // http://servicecenters.cirrusdesign.com/tech_pubs/SF50/pdf/amm/SF50/html/ammtoc.html
 
-@available(macOS 13.0, *)
 @main
 struct CirrusAMMGenerator: AsyncParsableCommand {
     @Argument(help: "The URL for the AMM/IPC/WM table of contents frame",
@@ -33,20 +32,21 @@ struct CirrusAMMGenerator: AsyncParsableCommand {
         
         try FileManager.default.createDirectoryUnlessExists(at: work)
        
-        logger.info("Downloading TOC…")
+        Task { @MainActor in logger.info("Downloading TOC…") }
         let book = try await Book(tocURL: url, workingDirectory: work, filename: filename)
-        book.logger = logger
-        
-        logger.info("Downloading PDFs…")
+        await book.setLogger(logger)
+
+        Task { @MainActor in logger.info("Downloading PDFs…") }
         try await book.downloadPDFs()
         
-        logger.info("Converting PDFs to PostScript files…")
+        Task { @MainActor in logger.info("Converting PDFs to PostScript files…") }
         try await book.convertToPS()
         
-        logger.info("Combining PostScript files to final PDF…")
+            Task { @MainActor in logger.info("Combining PostScript files to final PDF…") }
         try await book.generatePDFMarks()
         try await book.combinePDFs()
-        
-        print("Finished book is at \(book.outputURL.path)")
+
+        let path = await book.outputURL.path
+        Task { @MainActor in print("Finished book is at \(path)") }
     }
 }
