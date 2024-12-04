@@ -35,7 +35,20 @@ Use `swift build` to build the `cirrus-amm-generator` tool. Running that tool
 will show you usage instructions:
 
 ```
-USAGE: cirrus-amm-generator <url> [--work <work>] [--filename <filename>] [--verbose]
+OVERVIEW: Generates a combined PDF of all the Aircraft Maintenance Manuals (AMMs), Illustrated Parts Catalogs (IPCs), and Wiring Manuals (WMs) on the Cirrus Service Centers website.
+
+USAGE: This tool performs the following steps idempotently:
+
+       1. Downloads the list of URLs from a maintenance manual on the
+       [Cirrus Service Centers web site](http://servicecenters.cirrusdesign.com/)
+       2. Downloads each PDF
+       3. Converts each PDF to PostScript (thus removing PDF metadata)
+       4. Generates table-of-contents bookmark metadata
+       5. Merges the PDFs, in the process applying the new TOC metadata
+
+       The results of each step are saved to the working directory. If the tool fails
+       on any one step, it can be re-run without performing already-completed work
+       again.
 
 ARGUMENTS:
   <url>                   The URL for the AMM/IPC/WM table of contents frame
