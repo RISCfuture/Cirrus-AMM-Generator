@@ -14,7 +14,7 @@ enum PSToPDFConverter {
     
     private static func process(book: Book, marksURL: URL, output: URL) async -> Process {
         let process = Process()
-        process.executableURL = URL(filePath: "/usr/bin/env")
+        process.executableURL = URL(filePath: "/usr/bin/env", directoryHint: .notDirectory)
         process.arguments = [
             "gs", "-dBATCH", "-sDEVICE=pdfwrite",
             "-o", output.path

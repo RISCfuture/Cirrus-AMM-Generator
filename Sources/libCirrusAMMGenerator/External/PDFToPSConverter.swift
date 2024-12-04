@@ -24,7 +24,7 @@ enum PDFToPSConverter {
     
     private static func process(input: URL, output: URL) -> Process {
         let process = Process()
-        process.executableURL = URL(filePath: "/usr/bin/env")
+        process.executableURL = URL(filePath: "/usr/bin/env", directoryHint: .notDirectory)
         process.arguments = ["pdftops", input.path, output.path]
         return process
     }

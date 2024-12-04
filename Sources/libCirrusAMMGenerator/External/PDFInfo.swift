@@ -60,7 +60,7 @@ final class PDFInfo: Sendable {
     private func process() -> (Process, Pipe) {
         let process = Process()
         let pipe = Pipe()
-        process.executableURL = URL(filePath: "/usr/bin/env")
+        process.executableURL = URL(filePath: "/usr/bin/env", directoryHint: .notDirectory)
         process.arguments = ["pdfinfo", url.path]
         process.standardOutput = pipe
         return (process, pipe)

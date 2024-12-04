@@ -31,9 +31,9 @@ struct CirrusAMMGenerator: AsyncParsableCommand {
     
     @Option(name: .shortAndLong,
             help: "The working directory for temporary files (resumable)",
-            transform: { URL(filePath: $0) })
-//    var work = URL(filePath: NSTemporaryDirectory())
-    var work = Process().currentDirectoryURL!.appending(path: "work")
+            completion: .directory,
+            transform: { URL(filePath: $0, directoryHint: .isDirectory) })
+    var work = URL.currentDirectory().appending(path: "work")
     
     @Option(name: .shortAndLong,
             help: "The name of the output PDF file (stored in working directory)")
