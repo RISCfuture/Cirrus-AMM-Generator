@@ -239,7 +239,7 @@ actor Chapter {
     /// The number of pages in this chapter.
 
     func pages() async throws -> UInt {
-        if let _pages = _pages { return _pages }
+        if let _pages { return _pages }
         
         var pages: UInt = 0
         for section in sections {
@@ -251,7 +251,7 @@ actor Chapter {
     
     /// The page that the chapter begins at (1-indexed).
     func firstPage() async throws -> UInt {
-        if let _firstPage = _firstPage { return _firstPage }
+        if let _firstPage { return _firstPage }
         
         guard let previous = await previous else { return 1 }
         _firstPage = try await previous.firstPage() + previous.pages()
@@ -338,7 +338,7 @@ actor Section {
     }
     
     func firstPage() async throws -> UInt {
-        if let _firstPage = _firstPage { return _firstPage }
+        if let _firstPage { return _firstPage }
         
         guard let previous = await previous else { return try await chapter.firstPage() }
 
@@ -347,7 +347,7 @@ actor Section {
     }
     
     func pages() async throws -> UInt {
-        if let _pages = _pages { return _pages }
+        if let _pages { return _pages }
         _pages = try await pdfInfo.pages()
         return _pages!
     }
