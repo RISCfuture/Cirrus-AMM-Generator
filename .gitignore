@@ -8,3 +8,7 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 work
+
+
+# SwiftLint Remote Config Cache
+.swiftlint/RemoteConfigCache

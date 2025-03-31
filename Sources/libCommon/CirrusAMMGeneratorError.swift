@@ -2,40 +2,40 @@ import Foundation
 
 /// Errors that can occur in Cirrus AMM Generator.
 package enum CirrusAMMGeneratorError: Error {
-    
+
     /**
      A downloaded PDF file is missing for a section.
      - Parameter name: The name of the section.
      */
     case sectionNotDownloaded(name: String)
-    
+
     /**
      An HTTP download failed.
      - Parameter url: The URL that failed to download.
      - Parameter response: The failed response.
      */
     case downloadFailed(url: URL, response: URLResponse)
-    
+
     /**
      A PDF couldn’t be parsed by Poppler.
      - Parameter url: The location of the PDF file.
      */
     case couldntParsePDF(url: URL)
-    
+
     /**
      A PDF couldn’t be converted to PostScript by Poppler.
      - Parameter url: The location of the PDF file.
      */
     case couldntConvertPDFToPS(url: URL)
-    
+
     /**
      The PostScript files couldn’t be recombined into a PDF file by GhostScript.
      */
     case couldntConvertPStoPDF
-    
+
     /// The Table of Contents HTML file was in an unexpected format.
     case badTOC
-    
+
     /// The Table of Contents HTML file was not ISO-8859-1 encoded.
     case badEncoding
 }
@@ -59,7 +59,7 @@ extension CirrusAMMGeneratorError: LocalizedError {
                 return String(localized: "The Table of Contents page was in an unexpected encoding.", comment: "error description")
         }
     }
-    
+
     package var failureReason: String? {
         switch self {
             case let .sectionNotDownloaded(name):
@@ -70,9 +70,8 @@ extension CirrusAMMGeneratorError: LocalizedError {
                         localized: "Response \(response.statusCode) received when downloading “\(url.absoluteString)”.",
                         comment: "failure reason"
                     )
-                } else {
-                    return String(localized: "Unexpected response type when downloading “\(url.absoluteString)”.", comment: "failure reason")
                 }
+                return String(localized: "Unexpected response type when downloading “\(url.absoluteString)”.", comment: "failure reason")
             case let .couldntParsePDF(url):
                 return String(localized: "The file at “\(url.path)” doesn’t seem to be a valid PDF file.", comment: "failure reason")
             case let .couldntConvertPDFToPS(url):
@@ -85,7 +84,7 @@ extension CirrusAMMGeneratorError: LocalizedError {
                 return String(localized: "The HTML page was not ISO-8859-1 encoded.", comment: "failure reason")
         }
     }
-    
+
     package var recoverySuggestion: String? {
         switch self {
             case .sectionNotDownloaded:

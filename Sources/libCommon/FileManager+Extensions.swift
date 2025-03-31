@@ -1,7 +1,7 @@
 import Foundation
 
-extension FileManager {
-    package func createDirectoryUnlessExists(at url: URL) throws {
+package extension FileManager {
+    func createDirectoryUnlessExists(at url: URL) throws {
         var isDirectory: ObjCBool = false
         if fileExists(atPath: url.path, isDirectory: &isDirectory) {
             if !isDirectory.boolValue {
@@ -9,7 +9,7 @@ extension FileManager {
             }
             else { return }
         }
-        
+
         try createDirectory(at: url, withIntermediateDirectories: true)
     }
 }

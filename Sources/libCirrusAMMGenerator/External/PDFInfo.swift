@@ -7,41 +7,41 @@ final class PDFInfo: Sendable {
     init(url: URL) {
         self.url = url
     }
-    
+
     func pages() async throws -> UInt {
         try await withCheckedThrowingContinuation { continuation in
             do {
                 let (process, pipe) = process()
                 try process.run()
                 process.waitUntilExit()
-                
+
                 guard process.terminationReason == .exit && process.terminationStatus == 0 else {
                     continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
                     return
                 }
-                
+
                 guard let output = try pipe.fileHandleForReading.readToEnd() else {
                     continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
                     return
                 }
-                
+
                 guard let outputStr = String(data: output, encoding: .ascii) else {
                     continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
                     return
                 }
-                
+
                 var found = false
                 outputStr.enumerateLines(invoking: { line, stop in
                     let rx = #/^Pages:\s+(\d+)$/#
                     guard let match = line.wholeMatch(of: rx) else {
                         return
                     }
-                    
+
                     guard let pages = UInt(match.1) else {
                         continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: self.url))
                         return
                     }
-                    
+
                     continuation.resume(returning: pages)
                     found = true
                     stop = true
@@ -56,7 +56,7 @@ final class PDFInfo: Sendable {
             }
         }
     }
-    
+
     private func process() -> (Process, Pipe) {
         let process = Process()
         let pipe = Pipe()
@@ -66,4 +66,3 @@ final class PDFInfo: Sendable {
         return (process, pipe)
     }
 }
-

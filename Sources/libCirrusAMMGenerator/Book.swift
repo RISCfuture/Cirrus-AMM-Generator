@@ -1,6 +1,6 @@
 import Foundation
-import Logging
 import libCommon
+import Logging
 
 /**
  The primary class for generaring AMM PDFs.
@@ -21,41 +21,40 @@ import libCommon
 
 public actor Book {
     var data: BookData
-    
+
     /// The URL for the Table of Contents HTML page.
     public let tocURL: URL
-    
+
     /// A logger to record progress.
-    public var logger: Logger? = nil
-    public func setLogger(_ logger: Logger?) { self.logger = logger }
+    public var logger: Logger?
 
     /// The path where working files are stored, as well the output file.
     public let workingDirectory: URL
-    
+
     /// The filename for the generated PDF.
     public let filename: String
-    
+
     /// The path where the TOC data is cached after being downloaded.
     let bookInfoURL: URL
-    
+
     /// The path where PDFs are downloaded.
     lazy var pdfsURL = workingDirectory.appending(path: "pdfs")
-    
+
     /// The path where converted PostScript files are stored.
     lazy var psURL = workingDirectory.appending(path: "ps")
-    
+
     /// The path where table of contents metadata for the final PDF is saved.
     lazy var pdfMarksURL = workingDirectory.appending(path: "pdfmarks")
-    
+
     /// The path where the final PDF is generated.
-    lazy public var outputURL = workingDirectory.appending(path: filename)
-    
+    public lazy var outputURL = workingDirectory.appending(path: filename)
+
     lazy var chapters = data.chapters.map { Chapter(book: self, data: $0) }
 
     /// An ordered array of all the PDFs to merge.
-    var pdfPaths: Array<URL> {
+    var pdfPaths: [URL] {
         get async {
-            var pdfPaths = Array<URL>()
+            var pdfPaths = [URL]()
             for chapter in chapters {
                 for section in await chapter.sections {
                     guard await section.isDownloaded else { fatalError("PDFs not yet downloaded") }
@@ -67,9 +66,9 @@ public actor Book {
     }
 
     /// An ordered array of all the converted PostScript files to merge.
-    var psPaths: Array<URL> {
+    var psPaths: [URL] {
         get async {
-            var psPaths = Array<URL>()
+            var psPaths = [URL]()
             for chapter in chapters {
                 for section in await chapter.sections {
                     guard await section.isDownloaded else { fatalError("PDFs not yet downloaded") }
@@ -105,7 +104,10 @@ public actor Book {
             try self.saveBookData()
         }
     }
-    
+
+    /// Sets the logger.
+    public func setLogger(_ logger: Logger?) { self.logger = logger }
+
     /// Downloads all PDF chapter files into ``workingDirectory``.
     public func downloadPDFs() async throws {
         let urlsToRemove = try await withThrowingTaskGroup(of: (Int, URL)?.self) { group in
@@ -123,14 +125,14 @@ public actor Book {
                             if title == "Log of Temporary Revisions" || title == "33-40-07 Step Lights" {
                                 return await (chapterIndex, section.data.url)
                             }
-                            else { throw error }
+                            throw error
                         }
                         return nil
                     }
                 }
             }
 
-            var urlsToRemove = Dictionary<Int, Set<URL>>()
+            var urlsToRemove = [Int: Set<URL>]()
             for try await pair in group {
                 guard let (chapterIndex, sectionURL) = pair else { continue }
                 urlsToRemove[chapterIndex, default: Set()].insert(sectionURL)
@@ -142,41 +144,41 @@ public actor Book {
             await chapters[chapterIndex].removeAllSections(matchingURLs: urls)
         }
     }
-    
+
     /// Generates the table of contents data for the output PDF.
     public func generatePDFMarks() async throws {
         try FileManager.default.createDirectoryUnlessExists(at: pdfMarksURL.deletingLastPathComponent())
         if FileManager.default.fileExists(atPath: pdfMarksURL.path) { return }
-        
+
         let handle = try StringFileHandle(url: pdfMarksURL)
-        
+
         do {
             let pdfMarks = """
         [ /Title (#{book.title})
           /Author (Cirrus Design Inc.)\n
         """
             try handle.write(pdfMarks)
-            
+
             for chapter in chapters {
                 let sections = await chapter.sections.count
                 let title = await chapter.data.fullTitle
                 let page = try await chapter.firstPage()
                 try handle.write("[/Count -\(sections) /Title (\(title)) /Page \(page) /OUT pdfmark\n")
-                
+
                 for section in await chapter.sections {
                     let title = await section.fullTitle
                     let page = try await section.firstPage()
                     try handle.write("[/Title (\(title)) /Page \(page) /OUT pdfmark\n")
                 }
             }
-        } catch (let error as CirrusAMMGeneratorError) {
+        } catch let error as CirrusAMMGeneratorError {
             switch error {
                 case .badEncoding: throw CirrusAMMGeneratorError.badTOC
                 default: throw error
             }
         }
     }
-    
+
     /// Converts all downloaded PDFs to PostScript files. This is necessary to
     /// strip existing TOC metadata.
     public func convertToPS() async throws {
@@ -195,7 +197,7 @@ public actor Book {
             }
         }
     }
-    
+
     /// Combined converted PDF files into the output file, stored at
     /// ``outputURL``.
     public func combinePDFs() async throws {
@@ -209,17 +211,13 @@ public actor Book {
 }
 
 actor Chapter {
-    deinit {
-        print("deinit \(data.title)")
-    }
-
     unowned var book: Book
     var data: ChapterData
-    
+
     lazy var sections = data.sections.map { Section(chapter: self, data: $0) }
-    private var _pages: UInt? = nil
-    private var _firstPage: UInt? = nil
-    
+    private var _pages: UInt?
+    private var _firstPage: UInt?
+
     private var previous: Chapter? {
         get async {
             guard let index = await book.data.chapters.firstIndex(where: { data == $0 }) else {
@@ -230,7 +228,7 @@ actor Chapter {
             return await book.chapters[index - 1]
         }
     }
-    
+
     init(book: Book, data: ChapterData) {
         self.book = book
         self.data = data
@@ -240,7 +238,7 @@ actor Chapter {
 
     func pages() async throws -> UInt {
         if let _pages { return _pages }
-        
+
         var pages: UInt = 0
         for section in sections {
             pages += try await section.pages()
@@ -248,22 +246,20 @@ actor Chapter {
         _pages = pages
         return pages
     }
-    
+
     /// The page that the chapter begins at (1-indexed).
     func firstPage() async throws -> UInt {
         if let _firstPage { return _firstPage }
-        
+
         guard let previous = await previous else { return 1 }
         _firstPage = try await previous.firstPage() + previous.pages()
         return _firstPage!
     }
 
     func removeAllSections(matchingURLs urls: Set<URL>) async {
-        var newSections = Array<Section>()
-        for section in sections {
-            if await !urls.contains(section.data.url) {
-                newSections.append(section)
-            }
+        var newSections = [Section]()
+        for section in sections where await !urls.contains(section.data.url) {
+            newSections.append(section)
         }
         sections = newSections
     }
@@ -274,16 +270,15 @@ actor Section {
     var data: SectionData
 
     private var book: Book! { get async { await chapter.book } }
-    private var _pages: UInt? = nil
-    private var _firstPage: UInt? = nil
+    private var _pages: UInt?
+    private var _firstPage: UInt?
 
     var fullTitle: String {
         get async {
             if let numberStr = data.numberStr {
                 return await "\(chapter.data.numberStr)-\(numberStr) \(data.title)"
-            } else {
-                return data.title
             }
+            return data.title
         }
     }
 
@@ -293,28 +288,28 @@ actor Section {
             return await book.pdfsURL.appending(path: basename(extension: "pdf"))
         }
     }
-    
+
     /// The path where the converted PostScript file is (or will be) saved.
     var psURL: URL {
         get async {
             return await book.psURL.appending(path: basename(extension: "ps"))
         }
     }
-    
+
     /// Whether or not the PDF has been downloaded.
     var isDownloaded: Bool {
         get async {
             await FileManager.default.fileExists(atPath: pdfURL.path)
         }
     }
-    
+
     /// Whether or not the PDF has been converted to a PostScript file.
     var isConverted: Bool {
         get async {
             await FileManager.default.fileExists(atPath: psURL.path)
         }
     }
-    
+
     private var pdfInfo: PDFInfo {
         get async {
             await .init(url: pdfURL)
@@ -336,16 +331,16 @@ actor Section {
         self.chapter = chapter
         self.data = data
     }
-    
+
     func firstPage() async throws -> UInt {
         if let _firstPage { return _firstPage }
-        
+
         guard let previous = await previous else { return try await chapter.firstPage() }
 
         _firstPage = try await previous.firstPage() + previous.pages()
         return _firstPage!
     }
-    
+
     func pages() async throws -> UInt {
         if let _pages { return _pages }
         _pages = try await pdfInfo.pages()
