@@ -1,5 +1,6 @@
-@testable import libCirrusAMMGenerator
 import XCTest
+
+@testable import libCirrusAMMGenerator
 
 final class CirrusAMMGeneratorTests: XCTestCase {
 }

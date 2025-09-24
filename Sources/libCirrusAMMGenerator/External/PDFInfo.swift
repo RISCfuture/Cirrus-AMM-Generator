@@ -2,67 +2,67 @@ import Foundation
 import libCommon
 
 final class PDFInfo: Sendable {
-    let url: URL
+  let url: URL
 
-    init(url: URL) {
-        self.url = url
-    }
+  init(url: URL) {
+    self.url = url
+  }
 
-    func pages() async throws -> UInt {
-        try await withCheckedThrowingContinuation { continuation in
-            do {
-                let (process, pipe) = process()
-                try process.run()
-                process.waitUntilExit()
+  func pages() async throws -> UInt {
+    try await withCheckedThrowingContinuation { continuation in
+      do {
+        let (process, pipe) = process()
+        try process.run()
+        process.waitUntilExit()
 
-                guard process.terminationReason == .exit && process.terminationStatus == 0 else {
-                    continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
-                    return
-                }
-
-                guard let output = try pipe.fileHandleForReading.readToEnd() else {
-                    continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
-                    return
-                }
-
-                guard let outputStr = String(data: output, encoding: .ascii) else {
-                    continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
-                    return
-                }
-
-                var found = false
-                outputStr.enumerateLines(invoking: { line, stop in
-                    let rx = #/^Pages:\s+(\d+)$/#
-                    guard let match = line.wholeMatch(of: rx) else {
-                        return
-                    }
-
-                    guard let pages = UInt(match.1) else {
-                        continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: self.url))
-                        return
-                    }
-
-                    continuation.resume(returning: pages)
-                    found = true
-                    stop = true
-                })
-
-                if !found {
-                    continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
-                }
-            } catch {
-                continuation.resume(throwing: error)
-                return
-            }
+        guard process.terminationReason == .exit && process.terminationStatus == 0 else {
+          continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
+          return
         }
-    }
 
-    private func process() -> (Process, Pipe) {
-        let process = Process()
-        let pipe = Pipe()
-        process.executableURL = URL(filePath: "/usr/bin/env", directoryHint: .notDirectory)
-        process.arguments = ["pdfinfo", url.path]
-        process.standardOutput = pipe
-        return (process, pipe)
+        guard let output = try pipe.fileHandleForReading.readToEnd() else {
+          continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
+          return
+        }
+
+        guard let outputStr = String(data: output, encoding: .ascii) else {
+          continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
+          return
+        }
+
+        var found = false
+        outputStr.enumerateLines(invoking: { line, stop in
+          let rx = #/^Pages:\s+(\d+)$/#
+          guard let match = line.wholeMatch(of: rx) else {
+            return
+          }
+
+          guard let pages = UInt(match.1) else {
+            continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: self.url))
+            return
+          }
+
+          continuation.resume(returning: pages)
+          found = true
+          stop = true
+        })
+
+        if !found {
+          continuation.resume(throwing: CirrusAMMGeneratorError.couldntParsePDF(url: url))
+        }
+      } catch {
+        continuation.resume(throwing: error)
+        return
+      }
     }
+  }
+
+  private func process() -> (Process, Pipe) {
+    let process = Process()
+    let pipe = Pipe()
+    process.executableURL = URL(filePath: "/usr/bin/env", directoryHint: .notDirectory)
+    process.arguments = ["pdfinfo", url.path]
+    process.standardOutput = pipe
+    return (process, pipe)
+  }
 }
