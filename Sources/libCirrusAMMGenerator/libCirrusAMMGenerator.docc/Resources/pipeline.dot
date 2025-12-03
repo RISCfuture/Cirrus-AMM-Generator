@@ -1,0 +1,94 @@
+digraph Pipeline {
+    // Modern, clean styling
+    graph [
+        rankdir=LR,
+        bgcolor="transparent",
+        fontname="SF Pro Display, Helvetica Neue, Helvetica, Arial, sans-serif",
+        fontsize=12,
+        pad=0.5,
+        nodesep=0.6,
+        ranksep=0.8,
+        splines=ortho
+    ];
+
+    node [
+        shape=box,
+        style="filled,rounded",
+        fontname="SF Pro Text, Helvetica Neue, Helvetica, Arial, sans-serif",
+        fontsize=11,
+        fontcolor="#1d1d1f",
+        fillcolor="#f5f5f7",
+        color="#d2d2d7",
+        penwidth=1.5,
+        margin="0.3,0.15",
+        height=0.5
+    ];
+
+    edge [
+        color="#86868b",
+        penwidth=1.5,
+        arrowsize=0.8,
+        arrowhead=vee
+    ];
+
+    // Input node with distinct styling
+    website [
+        label="Cirrus\nWebsite",
+        fillcolor="#e8f4fd",
+        color="#0071e3",
+        fontcolor="#0071e3"
+    ];
+
+    // Process nodes
+    toc [
+        label="1. Parse TOC\n(TOCReader)",
+        fillcolor="#fef3e8",
+        color="#f5a623"
+    ];
+
+    download [
+        label="2. Download PDFs\n(PDFDownloader)",
+        fillcolor="#fef3e8",
+        color="#f5a623"
+    ];
+
+    convert [
+        label="3. Convert to PS\n(PDFToPSConverter)",
+        fillcolor="#fef3e8",
+        color="#f5a623"
+    ];
+
+    marks [
+        label="4. Generate Marks\n(pdfmarks)",
+        fillcolor="#fef3e8",
+        color="#f5a623"
+    ];
+
+    combine [
+        label="5. Combine PDFs\n(PSToPDFConverter)",
+        fillcolor="#fef3e8",
+        color="#f5a623"
+    ];
+
+    // Output node with distinct styling
+    output [
+        label="Combined\nPDF",
+        fillcolor="#e8f8e8",
+        color="#34c759",
+        fontcolor="#248a3d"
+    ];
+
+    // Flow
+    website -> toc;
+    toc -> download;
+    download -> convert;
+    convert -> marks;
+    marks -> combine;
+    combine -> output;
+
+    // Subtitle
+    labelloc="b";
+    label="PDF Generation Pipeline";
+    fontsize=14;
+    fontcolor="#86868b";
+}

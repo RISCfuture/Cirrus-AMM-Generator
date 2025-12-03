@@ -3,7 +3,13 @@ import RegexBuilder
 import SwiftSoup
 import libCommon
 
+/// Parses the table of contents HTML page from the Cirrus Service Centers website.
+///
+/// `TOCReader` downloads and parses the HTML table of contents page to extract
+/// the hierarchical structure of chapters and sections, along with their PDF URLs.
 actor TOCReader {
+
+  /// The URL of the table of contents HTML page.
   let url: URL
 
   private var session: URLSession { .init(configuration: .ephemeral) }
@@ -43,10 +49,22 @@ actor TOCReader {
     Anchor.endOfLine
   }
 
+  /// Creates a new TOC reader for the specified URL.
+  ///
+  /// - Parameter url: The URL of the table of contents HTML page to parse.
   init(url: URL) {
     self.url = url
   }
 
+  /// Downloads and parses the table of contents, returning structured book data.
+  ///
+  /// This method fetches the HTML page, parses it using SwiftSoup, and extracts
+  /// the book title, chapters, sections, and their associated PDF URLs.
+  ///
+  /// - Returns: A ``BookData`` struct containing the parsed table of contents.
+  /// - Throws: `CirrusAMMGeneratorError.downloadFailed` if the
+  ///   page cannot be downloaded.
+  /// - Throws: `CirrusAMMGeneratorError.badTOC` if the HTML structure is unexpected.
   func data() async throws -> BookData {
     let doc = try SwiftSoup.parse(await tocHTML())
 

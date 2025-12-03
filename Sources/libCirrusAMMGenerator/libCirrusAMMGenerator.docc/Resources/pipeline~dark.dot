@@ -1,0 +1,94 @@
+digraph Pipeline {
+    // Modern, clean styling - Dark mode
+    graph [
+        rankdir=LR,
+        bgcolor="transparent",
+        fontname="SF Pro Display, Helvetica Neue, Helvetica, Arial, sans-serif",
+        fontsize=12,
+        pad=0.5,
+        nodesep=0.6,
+        ranksep=0.8,
+        splines=ortho
+    ];
+
+    node [
+        shape=box,
+        style="filled,rounded",
+        fontname="SF Pro Text, Helvetica Neue, Helvetica, Arial, sans-serif",
+        fontsize=11,
+        fontcolor="#f5f5f7",
+        fillcolor="#2c2c2e",
+        color="#48484a",
+        penwidth=1.5,
+        margin="0.3,0.15",
+        height=0.5
+    ];
+
+    edge [
+        color="#636366",
+        penwidth=1.5,
+        arrowsize=0.8,
+        arrowhead=vee
+    ];
+
+    // Input node with distinct styling
+    website [
+        label="Cirrus\nWebsite",
+        fillcolor="#1c3d5a",
+        color="#0a84ff",
+        fontcolor="#64d2ff"
+    ];
+
+    // Process nodes
+    toc [
+        label="1. Parse TOC\n(TOCReader)",
+        fillcolor="#3d3222",
+        color="#ff9f0a"
+    ];
+
+    download [
+        label="2. Download PDFs\n(PDFDownloader)",
+        fillcolor="#3d3222",
+        color="#ff9f0a"
+    ];
+
+    convert [
+        label="3. Convert to PS\n(PDFToPSConverter)",
+        fillcolor="#3d3222",
+        color="#ff9f0a"
+    ];
+
+    marks [
+        label="4. Generate Marks\n(pdfmarks)",
+        fillcolor="#3d3222",
+        color="#ff9f0a"
+    ];
+
+    combine [
+        label="5. Combine PDFs\n(PSToPDFConverter)",
+        fillcolor="#3d3222",
+        color="#ff9f0a"
+    ];
+
+    // Output node with distinct styling
+    output [
+        label="Combined\nPDF",
+        fillcolor="#1e3a2f",
+        color="#30d158",
+        fontcolor="#30d158"
+    ];
+
+    // Flow
+    website -> toc;
+    toc -> download;
+    download -> convert;
+    convert -> marks;
+    marks -> combine;
+    combine -> output;
+
+    // Subtitle
+    labelloc="b";
+    label="PDF Generation Pipeline";
+    fontsize=14;
+    fontcolor="#8e8e93";
+}

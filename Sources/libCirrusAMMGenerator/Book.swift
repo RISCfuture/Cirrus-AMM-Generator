@@ -2,22 +2,52 @@ import Foundation
 import Logging
 import libCommon
 
-/**
- The primary class for generaring AMM PDFs.
-
- To use, initialize an instance using
- ``init(tocURL:workingDirectory:filename:)``, and then call the following
- methods in order:
-
- * ``downloadPDFs()``
- * ``generatePDFMarks()``
- * ``convertToPS()``
- * ``combinePDFs()``
-
- In-progress files will be saved in ``workingDirectory``, so if the process is
- aborted, it can be resumed (with the same ``workingDirectory``) where it left
- off.
- */
+/// The primary actor for generating combined AMM PDFs.
+///
+/// `Book` manages the entire PDF generation pipeline, from downloading source PDFs
+/// to combining them into a single output file with a properly formatted table of contents.
+///
+/// ## Overview
+///
+/// To use `Book`, initialize an instance with the table of contents URL and working directory,
+/// then call the pipeline methods in order:
+///
+/// ```swift
+/// let book = try await Book(
+///     tocURL: URL(string: "http://servicecenters.cirrusdesign.com/...")!,
+///     workingDirectory: URL(filePath: "./work"),
+///     filename: "AMM.pdf"
+/// )
+/// try await book.downloadPDFs()
+/// try await book.convertToPS()
+/// try await book.generatePDFMarks()
+/// try await book.combinePDFs()
+/// ```
+///
+/// ## Resumable Processing
+///
+/// All intermediate files are saved to ``workingDirectory``, allowing the process to be
+/// resumed if interrupted. Each pipeline method checks for existing files and skips
+/// already-completed work.
+///
+/// ## Topics
+///
+/// ### Creating a Book
+/// - ``init(tocURL:workingDirectory:filename:)``
+///
+/// ### Configuration
+/// - ``tocURL``
+/// - ``workingDirectory``
+/// - ``filename``
+/// - ``outputURL``
+/// - ``logger``
+/// - ``setLogger(_:)``
+///
+/// ### Pipeline Methods
+/// - ``downloadPDFs()``
+/// - ``convertToPS()``
+/// - ``generatePDFMarks()``
+/// - ``combinePDFs()``
 
 public actor Book {
   var data: BookData
@@ -103,10 +133,20 @@ public actor Book {
     }
   }
 
-  /// Sets the logger.
+  /// Sets the logger for progress reporting.
+  ///
+  /// When a logger is set, pipeline methods will log progress information such as
+  /// which PDFs are being downloaded or converted.
+  ///
+  /// - Parameter logger: A `Logger` instance from swift-log, or `nil` to disable logging.
   public func setLogger(_ logger: Logger?) { self.logger = logger }
 
   /// Downloads all PDF chapter files into ``workingDirectory``.
+  ///
+  /// This method downloads PDFs concurrently for improved performance. If a PDF
+  /// already exists in the working directory, it will be skipped.
+  ///
+  /// - Throws: `CirrusAMMGeneratorError.downloadFailed` if a download fails.
   public func downloadPDFs() async throws {
     let urlsToRemove = try await withThrowingTaskGroup(of: (Int, URL)?.self) { group in
       for (chapterIndex, chapter) in self.chapters.enumerated() {
@@ -146,6 +186,13 @@ public actor Book {
   }
 
   /// Generates the table of contents data for the output PDF.
+  ///
+  /// Creates a pdfmarks file containing bookmark metadata for all chapters and sections.
+  /// This metadata is used by GhostScript to create a navigable table of contents
+  /// in the final PDF.
+  ///
+  /// - Throws: `CirrusAMMGeneratorError.badEncoding` if the TOC data cannot be encoded.
+  /// - Throws: `CirrusAMMGeneratorError.badTOC` if the table of contents is malformed.
   public func generatePDFMarks() async throws {
     try FileManager.default.createDirectoryUnlessExists(at: pdfMarksURL.deletingLastPathComponent())
     if FileManager.default.fileExists(atPath: pdfMarksURL.path) { return }
@@ -179,8 +226,13 @@ public actor Book {
     }
   }
 
-  /// Converts all downloaded PDFs to PostScript files. This is necessary to
-  /// strip existing TOC metadata.
+  /// Converts all downloaded PDFs to PostScript files.
+  ///
+  /// This conversion is necessary to strip existing TOC metadata from the source PDFs.
+  /// The conversion uses Poppler's `pdftops` utility and runs concurrently for
+  /// improved performance.
+  ///
+  /// - Throws: `CirrusAMMGeneratorError.couldntConvertPDFToPS` if conversion fails.
   public func convertToPS() async throws {
     try await withThrowingDiscardingTaskGroup { group in
       for chapter in self.chapters {
@@ -200,8 +252,12 @@ public actor Book {
     }
   }
 
-  /// Combined converted PDF files into the output file, stored at
-  /// ``outputURL``.
+  /// Combines converted PostScript files into the final output PDF.
+  ///
+  /// Uses GhostScript to merge all PostScript files and apply the table of contents
+  /// bookmark metadata. The final PDF is stored at ``outputURL``.
+  ///
+  /// - Throws: `CirrusAMMGeneratorError.couldntConvertPStoPDF` if the combination fails.
   public func combinePDFs() async throws {
     try FileManager.default.createDirectoryUnlessExists(at: outputURL.deletingLastPathComponent())
     try await PSToPDFConverter.convert(book: self, marksURL: pdfMarksURL, output: outputURL)

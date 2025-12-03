@@ -79,7 +79,7 @@ extension CirrusAMMGeneratorError: LocalizedError {
           localized: "Expected the section “\(name)” to be downloaded, but it wasn’t.",
           comment: "failure reason"
         )
-      case .downloadFailed(let url, let response):
+      case let .downloadFailed(url, response):
         if let response = response as? HTTPURLResponse {
           return String(
             localized:
